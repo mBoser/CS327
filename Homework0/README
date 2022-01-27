@@ -1,0 +1,8 @@
+This is my simple program in C that solves all of the "knights tour" problem on a 5x5 grid. As far as I can tell
+it works flawlessly printing out all 1728 solutions. Some of the core functionality is the tour function that
+is called recursively to find all of the necessary paths. Some of the variables passed in were a 5x5 grid that I
+used for checking if I had visited that slot, and if i had mark it as a 0, and if it was unvisited, mark it as a -1.
+Another key feature was the path list, which was just a simple 1D array that kept track of the path taken to get to
+the end, and if the end was reached, print out the path. This was nice because it could be changed over and over again
+without having to worry about overrwrites and what not, because if it reached the end, it did what it was needed to
+do and was ready to start again.
