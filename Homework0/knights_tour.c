@@ -29,7 +29,6 @@ void tour(int x, int y, int num_jumps, int grid[5][5], int x_moveset[5], int y_m
         return;
     }
 
-
     for (k = 0; k < 8; k++) { //do all the moves in the set of possible moves
         next_x = x + x_moveset[k];
         next_y = y + y_moveset[k];
@@ -40,13 +39,11 @@ void tour(int x, int y, int num_jumps, int grid[5][5], int x_moveset[5], int y_m
     grid[x][y] = -1;
 
 }
-
  
 int main()
 {
     int grid[5][5];
  
-    
     int x_moveset[8] = { 2, 1, -1, -2, -2, -1, 1, 2 };
     int y_moveset[8] = { 1, 2, 2, 1, -1, -2, -2, -1 };
 
