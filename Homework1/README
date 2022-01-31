@@ -1,0 +1,6 @@
+The first part to creating this pokemon game, we need to generate a map. My approach for this is first generating
+a path using some random locations for the exits, and then connecting them in a somewhat random manner. The next 
+step in the map generation process was to create the pokemart and the pokemon centers. I chose random x values 
+and then found the nearest path and then do some simple validity checks to see if the space is open, then place
+them attached to the path. After the buildings have been generated, the last step is to generate the biomes and
+other terrain. 
