@@ -3,6 +3,14 @@
 #include <stdbool.h>
 #include <time.h>
 
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
 char PATH = '#';
 char CLEARING = '.';
 char TREE = '^';
@@ -17,7 +25,7 @@ int gen_rand(int bound){
 }
 
 bool valid_space(int y, int x){
-    if (x >= 80 || x < 0 || y < 0 || y >= 21 || map[y][x] == '#' || map[y][x] == '%' || map[y][x] == 'C' || map[y][x] == 'M'){
+    if (x >= 80 || x < 0 || y < 0 || y >= 21 || map[y][x] == PATH || map[y][x] == ROCK || map[y][x] == CENTER || map[y][x] == MART){
         return false;
     }
     else{
@@ -79,15 +87,14 @@ void gen_boarder(){
     int x, y;
     for (y = 0; y < 21; y++){
         for (x = 0; x < 80; x++){
-            if ((y == 0 || y == 20 || x == 0 || x == 79) && map[y][x] != '#'){
-                map[y][x] = '%';
+            if ((y == 0 || y == 20 || x == 0 || x == 79) && map[y][x] != PATH){
+                map[y][x] = ROCK;
             }
         }
     }
 }
 
 void gen_buildings(){
-
     bool center_placed = false;
     bool mart_placed = false;
     while(!center_placed && !mart_placed){
@@ -99,49 +106,49 @@ void gen_buildings(){
                 if (map[y][rand_center] == '#'){
                     if(valid_space(y,rand_center+1) && valid_space(y,rand_center+2)){ //CHECK IF THE RIGHT IS CLEAR
                         if(valid_space(y+1,rand_center+1) && valid_space(y+1,rand_center+2)){ //RIGHT DOWN
-                            map[y][rand_center+1] = 'C';
-                            map[y][rand_center+2] = 'C';
-                            map[y+1][rand_center+1] = 'C';
-                            map[y+1][rand_center+2] = 'C';
+                            map[y][rand_center+1] = CENTER;
+                            map[y][rand_center+2] = CENTER;
+                            map[y+1][rand_center+1] = CENTER;
+                            map[y+1][rand_center+2] = CENTER;
                             center_placed=true;
                         }
                         else if(valid_space(y-1,rand_center+1) && valid_space(y-1,rand_center+2)){
-                            map[y][rand_center+1] = 'C';
-                            map[y][rand_center+2] = 'C';
-                            map[y-1][rand_center+1] = 'C';
-                            map[y-1][rand_center+2] = 'C';
+                            map[y][rand_center+1] = CENTER;
+                            map[y][rand_center+2] = CENTER;
+                            map[y-1][rand_center+1] = CENTER;
+                            map[y-1][rand_center+2] = CENTER;
                             center_placed=true;
                         }
                     }
                     else if(valid_space(y+1,rand_center) && valid_space(y+2,rand_center)){
                         if(valid_space(y+1,rand_center+1) && valid_space(y+2,rand_center+1)){
-                            map[y+1][rand_center] = 'C';
-                            map[y+2][rand_center] = 'C';
-                            map[y+1][rand_center+1] = 'C';
-                            map[y+2][rand_center+1] = 'C';
+                            map[y+1][rand_center] = CENTER;
+                            map[y+2][rand_center] = CENTER;
+                            map[y+1][rand_center+1] = CENTER;
+                            map[y+2][rand_center+1] = CENTER;
                             center_placed=true;
                         }
                         else if(valid_space(y+1,rand_center-1) && valid_space(y+2,rand_center-1)){
-                            map[y+1][rand_center] = 'C';
-                            map[y+2][rand_center] = 'C';
-                            map[y+1][rand_center-1] = 'C';
-                            map[y+2][rand_center-1] = 'C';
+                            map[y+1][rand_center] = CENTER;
+                            map[y+2][rand_center] = CENTER;
+                            map[y+1][rand_center-1] = CENTER;
+                            map[y+2][rand_center-1] = CENTER;
                             center_placed=true;
                         }
                     }
                     else if(valid_space(y-1,rand_center) && valid_space(y-2,rand_center)){
                         if(valid_space(y-1,rand_center+1) && valid_space(y-2,rand_center+1)){
-                            map[y-1][rand_center] = 'C';
-                            map[y-2][rand_center] = 'C';
-                            map[y-1][rand_center+1] = 'C';
-                            map[y-2][rand_center+1] = 'C';
+                            map[y-1][rand_center] = CENTER;
+                            map[y-2][rand_center] = CENTER;
+                            map[y-1][rand_center+1] = CENTER;
+                            map[y-2][rand_center+1] = CENTER;
                             center_placed=true;
                         }
                         else if(valid_space(y-1,rand_center-1) && valid_space(y-2,rand_center-1)){
-                            map[y-1][rand_center] = 'C';
-                            map[y-2][rand_center] = 'C';
-                            map[y-1][rand_center-1] = 'C';
-                            map[y-2][rand_center-1] = 'C';
+                            map[y-1][rand_center] = CENTER;
+                            map[y-2][rand_center] = CENTER;
+                            map[y-1][rand_center-1] = CENTER;
+                            map[y-2][rand_center-1] = CENTER;
                             center_placed=true;
                         }
                     }
@@ -153,49 +160,49 @@ void gen_buildings(){
                 if (map[y][rand_mart] == '#'){
                     if(valid_space(y,rand_mart+1) && valid_space(y,rand_mart+2)){
                         if(valid_space(y+1,rand_mart+1) && valid_space(y+1,rand_mart+2)){
-                            map[y][rand_mart+1] = 'M';
-                            map[y][rand_mart+2] = 'M';
-                            map[y+1][rand_mart+1] = 'M';
-                            map[y+1][rand_mart+2] = 'M';
+                            map[y][rand_mart+1] = MART;
+                            map[y][rand_mart+2] = MART;
+                            map[y+1][rand_mart+1] = MART;
+                            map[y+1][rand_mart+2] = MART;
                             mart_placed=true;
                         }
                         else if(valid_space(y-1,rand_mart+1) && valid_space(y-1,rand_mart+2)){
-                            map[y][rand_mart+1] = 'M';
-                            map[y][rand_mart+2] = 'M';
-                            map[y+1][rand_mart+1] = 'M';
-                            map[y+1][rand_mart+2] = 'M';
+                            map[y][rand_mart+1] = MART;
+                            map[y][rand_mart+2] = MART;
+                            map[y+1][rand_mart+1] = MART;
+                            map[y+1][rand_mart+2] = MART;
                             mart_placed=true;
                         }
                     }
                     else if(valid_space(y+1,rand_mart) && valid_space(y+2,rand_mart)){
                         if(valid_space(y+1,rand_mart+1) && valid_space(y+2,rand_mart+1)){
-                            map[y+1][rand_mart] = 'M';
-                            map[y+2][rand_mart] = 'M';
-                            map[y+1][rand_mart+1] = 'M';
-                            map[y+2][rand_mart+1] = 'M';
+                            map[y+1][rand_mart] = MART;
+                            map[y+2][rand_mart] = MART;
+                            map[y+1][rand_mart+1] = MART;
+                            map[y+2][rand_mart+1] = MART;
                             mart_placed=true;
                         }
                         else if(valid_space(y+1,rand_mart-1) && valid_space(y+2,rand_mart-1)){
-                            map[y+1][rand_mart] = 'M';
-                            map[y+2][rand_mart] = 'M';
-                            map[y+1][rand_mart-1] = 'M';
-                            map[y+2][rand_mart-1] = 'M';
+                            map[y+1][rand_mart] = MART;
+                            map[y+2][rand_mart] = MART;
+                            map[y+1][rand_mart-1] = MART;
+                            map[y+2][rand_mart-1] = MART;
                             mart_placed=true;
                         }
                     }
                     else if(valid_space(y-1,rand_mart) && valid_space(y-2,rand_mart)){
                         if(valid_space(y-1,rand_mart+1) && valid_space(y-2,rand_mart+1)){
-                            map[y-1][rand_mart] = 'M';
-                            map[y-2][rand_mart] = 'M';
-                            map[y-1][rand_mart+1] = 'M';
-                            map[y-2][rand_mart+1] = 'M';
+                            map[y-1][rand_mart] = MART;
+                            map[y-2][rand_mart] = MART;
+                            map[y-1][rand_mart+1] = MART;
+                            map[y-2][rand_mart+1] = MART;
                             mart_placed=true;
                         }
                         else if(valid_space(y+1,rand_mart-1) && valid_space(y+2,rand_mart-1)){
-                            map[y-1][rand_mart] = 'M';
-                            map[y-2][rand_mart] = 'M';
-                            map[y-1][rand_mart-1] = 'M';
-                            map[y-2][rand_mart-1] = 'M';
+                            map[y-1][rand_mart] = MART;
+                            map[y-2][rand_mart] = MART;
+                            map[y-1][rand_mart-1] = MART;
+                            map[y-2][rand_mart-1] = MART;
                             mart_placed=true;
                         }
                     }
@@ -205,6 +212,49 @@ void gen_buildings(){
 
     }
 }
+
+char get_mixed_terrain(){
+    int rand = gen_rand(100);
+    if(rand < 2){
+        return ROCK;
+    }
+    else if(rand >= 2 && rand < 4){
+        return TREE;
+    }
+    else{
+        return CLEARING;
+    }
+}
+
+void place_terrain(int x, int y, char terrain){
+    int i, j;
+    for(i = y-5; i < y+5; i++){
+        for(j = x-10; j< x+10; j++){
+            if (valid_space(i,j)){
+                map[i][j] = terrain;
+            }
+        }
+    }
+}
+
+void gen_terrain(){
+    int grass_1_x = gen_rand(77)+1;
+    int grass_1_y = gen_rand(18)+1;
+    place_terrain(grass_1_x,grass_1_y, TALL_GRASS);
+
+    int grass_2_x = gen_rand(77)+1;
+    int grass_2_y = gen_rand(18)+1;
+    place_terrain(grass_2_x,grass_2_y, TALL_GRASS);
+
+    int clearing_1_x = gen_rand(77)+1;
+    int clearing_1_y = gen_rand(18)+1;
+    place_terrain(clearing_1_x,clearing_1_y, CLEARING);
+
+    int clearing_2_x = gen_rand(77)+1;
+    int clearing_2_y = gen_rand(18)+1;
+    place_terrain(clearing_2_x,clearing_2_y, CLEARING);
+
+}
  
 int main()
 {
@@ -213,15 +263,34 @@ int main()
     int i, j;
     for(i = 0; i<21; i++){
         for(j = 0; j<80; j++){
-            map[i][j] = CLEARING;
+            map[i][j] = get_mixed_terrain();
         }
     }
     gen_paths();
     gen_boarder();
     gen_buildings();
+    gen_terrain();
     for(i = 0; i<21; i++){
         for(j = 0; j<80; j++){
-            printf("%c", map[i][j]);
+            if ((map[i][j] == CLEARING) || map[i][j] == TALL_GRASS){
+                printf(ANSI_COLOR_GREEN   "%c", map[i][j]);
+                printf(ANSI_COLOR_RESET);
+            }else if (map[i][j] == ROCK){
+                printf("%c", map[i][j]);
+            }else if (map[i][j] == TREE){
+                printf(ANSI_COLOR_YELLOW   "%c", map[i][j]);
+                printf(ANSI_COLOR_RESET);
+            }else if(map[i][j] == PATH){
+                printf(ANSI_COLOR_RED   "%c", map[i][j]);
+                printf(ANSI_COLOR_RESET);
+            }else if((map[i][j] == MART) || map[i][j] == CENTER){
+                printf(ANSI_COLOR_MAGENTA   "%c", map[i][j]);
+                printf(ANSI_COLOR_RESET);
+            }
+            else{
+                printf("%c", map[i][j]);
+            }
+            
         }
         printf("\n");
     }
