@@ -1,0 +1,15 @@
+1/31/22
+    Created file and started working on printing basic map.
+    Placed borders, and path generation.
+    Placed pokemart and pokecenters around the paths.
+
+2/1/22
+    Added terrain generation.
+    Added mixed terrain to fill in gaps.
+    Added color to the final map.
+
+2/2/22
+    Fixed bug with pokemart spawn that would crush paths.
+    Fixed bug where pokemart wouldn't spawn sometimes.
+    Overhauled path spawning algorithm to now be "natural".
+    Adjusted size of some terrain types, aka made the tall grass region a little larger.

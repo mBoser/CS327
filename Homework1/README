@@ -3,4 +3,9 @@ a path using some random locations for the exits, and then connecting them in a 
 step in the map generation process was to create the pokemart and the pokemon centers. I chose random x values 
 and then found the nearest path and then do some simple validity checks to see if the space is open, then place
 them attached to the path. After the buildings have been generated, the last step is to generate the biomes and
-other terrain. 
+other terrain. To complete this task, I created 4 random seed locations for the center of each terrain "area", 
+two for clearings and two for tall grass. After the clearings and tall grass have been placed, the rest of the
+map is filled with mixed terrain, which is 96% clearing or short grass, 2% rock, and 2% trees. The last touch that
+I added was some color to make the map a little easier to distinguish between the different types. The paths are red,
+tall and short grass are green, rocks are white, trees are yellow, and the buildings (centers and marts) are purple.
+This adds better visibility and a better look overall.

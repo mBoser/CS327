@@ -33,7 +33,118 @@ bool valid_space(int y, int x){
     }
 }
 
+bool in_path_bounds(int y, int x){
+    if (x >= 79 || x < 1 || y < 1 || y >= 20){
+        return false;
+    }
+    else{
+        return true;
+    }
+}
+
 void gen_paths(){
+
+    //VERY FUN PATH GENERATION
+    int north_exit = gen_rand(70) + 5;
+    map[0][north_exit] = PATH;
+    int x, y;
+
+    x = north_exit;
+    y = 0;
+    while(y < 20){
+        int rand = gen_rand(100);
+        bool moved = false;
+        if (y == 19 || y == 0){
+            map[y+1][x] = PATH;
+            moved = true;
+            y = y+1;
+        }
+        if(rand < 5 && !moved){
+            if (in_path_bounds(y+1, x-1) && in_path_bounds(y+1, x)){
+                map[y+1][x] = PATH;
+                map[y+1][x-1] = PATH;
+                moved = true;
+                x = x-1;
+                y = y+1;
+            }
+        } else if (rand >= 5 && rand < 10 && !moved){
+            if (in_path_bounds(y+1, x+1) && in_path_bounds(y+1, x)){
+                map[y+1][x] = PATH;
+                map[y+1][x+1] = PATH;
+                moved = true;
+                x = x+1;
+                y = y+1;
+            }
+        } else if (rand >= 10 && rand < 30 && !moved){
+            if (in_path_bounds(y, x+1)){
+                map[y][x+1] = PATH;
+                moved = true;
+                x = x+1;
+            }
+        } else if (rand >= 30 && rand < 50 && !moved){
+            if (in_path_bounds(y, x-1)){
+                map[y][x-1] = PATH;
+                moved = true;
+                x = x-1;
+            }
+        }
+        if (!moved){
+            map[y+1][x] = PATH;
+            y = y+1;
+            moved = true;
+        }
+    }
+
+    int west_exit = gen_rand(15) + 3;
+    map[west_exit][0] = PATH;
+    x = 0;
+    y = west_exit;
+    while(x < 79){
+        int rand = gen_rand(100);
+        bool moved = false;
+        if (x == 78 || x == 0){
+            map[y][x+1] = PATH;
+            moved = true;
+            x = x+1;
+        }
+        if(rand < 5 && !moved){
+            if (in_path_bounds(y+1, x) && in_path_bounds(y+1, x+1)){
+                map[y+1][x] = PATH;
+                map[y+1][x+1] = PATH;
+                moved = true;
+                x = x+1;
+                y = y+1;
+            }
+        } else if (rand >= 5 && rand < 10 && !moved){
+            if (in_path_bounds(y-1, x+1) && in_path_bounds(y-1, x)){
+                map[y-1][x+1] = PATH;
+                map[y-1][x] = PATH;
+                moved = true;
+                x = x+1;
+                y = y-1;
+            }
+        } else if (rand >= 10 && rand < 25 && !moved){
+            if (in_path_bounds(y+1, x)){
+                map[y+1][x] = PATH;
+                moved = true;
+                y = y+1;
+            }
+        } else if (rand >= 25 && rand < 40 && !moved){
+            if (in_path_bounds(y-1, x)){
+                map[y-1][x] = PATH;
+                moved = true;
+                y = y-1;
+            }
+        }
+        if (!moved){
+            map[y][x+1] = PATH;
+            x = x+1;
+            moved = true;
+        }
+    }
+
+    //BORING LINE PATH GENERATION
+    /*
     int north_exit = gen_rand(78) + 1;
     int south_exit = gen_rand(78) + 1;
     int east_exit = gen_rand(19) + 1;
@@ -80,7 +191,7 @@ void gen_paths(){
     for(x = x_offset; x < 80; x++){
         map[east_exit][x] = PATH;
     }
-
+    */
 }
 
 void gen_boarder(){
@@ -97,7 +208,7 @@ void gen_boarder(){
 void gen_buildings(){
     bool center_placed = false;
     bool mart_placed = false;
-    while(!center_placed && !mart_placed){
+    while((!center_placed) || (!mart_placed)){
         int rand_center = gen_rand(60)+5;
         int rand_mart = gen_rand(60)+5;
         int y;
@@ -169,8 +280,8 @@ void gen_buildings(){
                         else if(valid_space(y-1,rand_mart+1) && valid_space(y-1,rand_mart+2)){
                             map[y][rand_mart+1] = MART;
                             map[y][rand_mart+2] = MART;
-                            map[y+1][rand_mart+1] = MART;
-                            map[y+1][rand_mart+2] = MART;
+                            map[y-1][rand_mart+1] = MART;
+                            map[y-1][rand_mart+2] = MART;
                             mart_placed=true;
                         }
                     }
@@ -198,7 +309,7 @@ void gen_buildings(){
                             map[y-2][rand_mart+1] = MART;
                             mart_placed=true;
                         }
-                        else if(valid_space(y+1,rand_mart-1) && valid_space(y+2,rand_mart-1)){
+                        else if(valid_space(y-1,rand_mart-1) && valid_space(y-2,rand_mart-1)){
                             map[y-1][rand_mart] = MART;
                             map[y-2][rand_mart] = MART;
                             map[y-1][rand_mart-1] = MART;
@@ -211,6 +322,7 @@ void gen_buildings(){
         }
 
     }
+
 }
 
 char get_mixed_terrain(){
@@ -226,10 +338,10 @@ char get_mixed_terrain(){
     }
 }
 
-void place_terrain(int x, int y, char terrain){
+void place_terrain(int x, int y, int w, int l, char terrain){
     int i, j;
-    for(i = y-5; i < y+5; i++){
-        for(j = x-10; j< x+10; j++){
+    for(i = y-l; i < y+l; i++){
+        for(j = x-w; j< x+w; j++){
             if (valid_space(i,j)){
                 map[i][j] = terrain;
             }
@@ -240,19 +352,19 @@ void place_terrain(int x, int y, char terrain){
 void gen_terrain(){
     int grass_1_x = gen_rand(77)+1;
     int grass_1_y = gen_rand(18)+1;
-    place_terrain(grass_1_x,grass_1_y, TALL_GRASS);
+    place_terrain(grass_1_x,grass_1_y, 15, 7, TALL_GRASS);
 
     int grass_2_x = gen_rand(77)+1;
     int grass_2_y = gen_rand(18)+1;
-    place_terrain(grass_2_x,grass_2_y, TALL_GRASS);
+    place_terrain(grass_2_x,grass_2_y, 15, 7, TALL_GRASS);
 
     int clearing_1_x = gen_rand(77)+1;
     int clearing_1_y = gen_rand(18)+1;
-    place_terrain(clearing_1_x,clearing_1_y, CLEARING);
+    place_terrain(clearing_1_x,clearing_1_y, 10, 5, CLEARING);
 
     int clearing_2_x = gen_rand(77)+1;
     int clearing_2_y = gen_rand(18)+1;
-    place_terrain(clearing_2_x,clearing_2_y, CLEARING);
+    place_terrain(clearing_2_x,clearing_2_y, 10, 5, CLEARING);
 
 }
  
