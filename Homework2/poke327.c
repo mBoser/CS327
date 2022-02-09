@@ -2,12 +2,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <machine/endian.h>
+#include <endian.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <limits.h>
 #include <sys/time.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #include "heap.h"
 
@@ -17,12 +18,22 @@
   _tmp;                          \
 })
 
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
+
 typedef struct path {
   heap_node_t *hn;
   uint8_t pos[2];
   uint8_t from[2];
   int32_t cost;
 } path_t;
+
 
 typedef enum dim {
   dim_x,
@@ -62,6 +73,13 @@ typedef struct map {
   uint8_t height[MAP_Y][MAP_X];
   uint8_t n, s, e, w;
 } map_t;
+
+
+typedef struct world {
+  map_t *world[399][399];
+  int curr_x, curr_y;
+} world_t;
+
 
 typedef struct queue_node {
   int x, y;
@@ -361,6 +379,19 @@ static int smooth_height(map_t *m)
   return 0;
 }
 
+int gen_rand(int bound){
+    return (rand() % bound);
+}
+
+static int spawn_chance(int x, int y){
+  if(x == 199 && y == 199){
+    return 100;
+  }
+  int man_distance = abs(x-199) + abs(y-199);
+  int prob = (((-45*man_distance)/400)+50); //I believe for our case, we want it to be divided by 400, unless by the manhattan distance he only wanted the furthest coordinate in x or y.
+  return prob;
+}
+
 static void find_building_location(map_t *m, pair_t p)
 {
   do {
@@ -392,31 +423,39 @@ static void find_building_location(map_t *m, pair_t p)
   } while (1);
 }
 
-static int place_pokemart(map_t *m)
+static int place_pokemart(world_t *w, map_t *m)
 {
-  pair_t p;
+  int rand = gen_rand(100);
+  int prob = spawn_chance(w->curr_x, w->curr_y);
+  if(rand < prob){
+    pair_t p;
 
-  find_building_location(m, p);
+    find_building_location(m, p);
 
-  mapxy(p[dim_x]    , p[dim_y]    ) = ter_mart;
-  mapxy(p[dim_x] + 1, p[dim_y]    ) = ter_mart;
-  mapxy(p[dim_x]    , p[dim_y] + 1) = ter_mart;
-  mapxy(p[dim_x] + 1, p[dim_y] + 1) = ter_mart;
-
-  return 0;
+    mapxy(p[dim_x]    , p[dim_y]    ) = ter_mart;
+    mapxy(p[dim_x] + 1, p[dim_y]    ) = ter_mart;
+    mapxy(p[dim_x]    , p[dim_y] + 1) = ter_mart;
+    mapxy(p[dim_x] + 1, p[dim_y] + 1) = ter_mart;
+    }
+    return 0;
 }
 
-static int place_center(map_t *m)
-{  pair_t p;
+static int place_center(world_t *w, map_t *m)
+{  
+  int rand = gen_rand(100);
+  int prob = spawn_chance(w->curr_x, w->curr_y);
 
-  find_building_location(m, p);
+  if(rand < prob){
+    pair_t p;
 
-  mapxy(p[dim_x]    , p[dim_y]    ) = ter_center;
-  mapxy(p[dim_x] + 1, p[dim_y]    ) = ter_center;
-  mapxy(p[dim_x]    , p[dim_y] + 1) = ter_center;
-  mapxy(p[dim_x] + 1, p[dim_y] + 1) = ter_center;
+    find_building_location(m, p);
 
-  return 0;
+    mapxy(p[dim_x]    , p[dim_y]    ) = ter_center;
+    mapxy(p[dim_x] + 1, p[dim_y]    ) = ter_center;
+    mapxy(p[dim_x]    , p[dim_y] + 1) = ter_center;
+    mapxy(p[dim_x] + 1, p[dim_y] + 1) = ter_center;
+    }
+    return 0;
 }
 
 static int map_terrain(map_t *m, uint8_t n, uint8_t s, uint8_t e, uint8_t w)
@@ -619,17 +658,37 @@ static int place_trees(map_t *m)
   return 0;
 }
 
-static int new_map(map_t *m)
+static int new_map(world_t *w, map_t *m)
 {
   smooth_height(m);
-  map_terrain(m,
-              1 + rand() % (MAP_X - 2), 1 + rand() % (MAP_X - 2),
-              1 + rand() % (MAP_Y - 2), 1 + rand() % (MAP_Y - 2));
+  uint8_t north, south, east, west;
+  if (m->n != 0){
+    north = m->n;
+  } else{
+    north = 1 + rand() % (MAP_X - 2);
+  }
+  if (m->s != 0){
+    south = m->s;
+  } else{
+    south = 1 + rand() % (MAP_X - 2);
+  }
+  if (m->e != 0){
+    east = m->e;
+  } else{
+    east = 1 + rand() % (MAP_Y - 2);
+  }
+  if (m->w != 0){
+    west = m->w;
+  } else{
+    west = 1 + rand() % (MAP_Y - 2);
+  }
+
+  map_terrain(m, north, south, east, west);
   place_boulders(m);
   build_paths(m);
   place_trees(m);
-  place_pokemart(m);
-  place_center(m);
+  place_pokemart(w, m);
+  place_center(w, m);
 
   return 0;
 }
@@ -678,9 +737,64 @@ static void print_map(map_t *m)
   }
 }
 
+bool move(world_t *wrld, uint8_t *n, uint8_t *s, uint8_t *e, uint8_t *w, int x, int y){
+  if(x < 0 || x > 398 || y < 0 || y > 398){
+    return false;
+  }
+  if(wrld->world[y][x] != 0){ // if the square is already discovered, return true and print the already printed map.
+    return true;
+  }
+
+  if((y-1 >= 0 && y-1 <= 398) && wrld->world[y-1][x] != 0){ //check if north is discovered
+    *n = ((wrld->world[y-1][x])->s);
+  } else{
+    *n = 0;
+  }
+  if((y+1 >= 0 && y+1 <= 398) && wrld->world[y+1][x] != 0){ //check if south is discovered
+    *s = ((wrld->world[y+1][x])->n);
+  } else{
+    *s = 0;
+  }
+  if((x+1 >= 0 && x+1 <= 398) && wrld->world[y][x+1] != 0){ //check if east is discovered
+    *e = ((wrld->world[y][x+1])->w);
+  } else{
+    *e = 0;
+  }
+  if((x-1 >= 0 && x-1 <= 398) && wrld->world[y][x-1] != 0){ //check if west is discovered
+    *w = ((wrld->world[y][x-1])->e);
+  } else{
+    *w = 0;
+  }
+  return true;
+}
+
+void block_exits(world_t *wrld, int x, int y){
+  int i;
+  if(x == 0){
+    for(i = 0; i < 21; i++){
+      wrld->world[y][x]->map[i][0] = ter_boulder;
+    }
+  }
+  if(y == 0){
+    for(i = 0; i < 80; i++){
+      wrld->world[y][x]->map[0][i] = ter_boulder;
+    }
+  }
+  if(x == 398){
+    for(i = 0; i < 21; i++){
+      wrld->world[y][x]->map[i][398] = ter_boulder;
+    }
+  }
+  if(y == 398){
+    for(i = 0; i < 21; i++){
+      wrld->world[y][x]->map[398][i] = ter_boulder;
+    }
+  }
+}
+
 int main(int argc, char *argv[])
 {
-  map_t d;
+  
   struct timeval tv;
   uint32_t seed;
 
@@ -693,9 +807,175 @@ int main(int argc, char *argv[])
 
   printf("Using seed: %u\n", seed);
   srand(seed);
+  world_t w;
+  int i, j;
+  for(i = 0; i < 399; i++){
+    for(j = 0; j < 399; j++){
+      w.world[i][j] = 0;
+    }
+  }
+  map_t d;
+  w.curr_x = 199;
+  w.curr_y = 199;
 
-  new_map(&d);
-  print_map(&d);
+  w.world[w.curr_y][w.curr_x] = &d;
+
+  d.n = 0;
+  d.s = 0;
+  d.w = 0;
+  d.e = 0;
+
+  new_map(&w, &d);
+
+
+  char inst = 'z';
+  int x_tele = -1;
+  int y_tele = -1;
+  bool valid = false;
+
+  
+   do {
+
+    printf("%d %d\n", w.curr_x, w.curr_y);
+    print_map(w.world[w.curr_y][w.curr_x]);
+
+
+    valid = false;
+    x_tele = -1;
+    y_tele = -1;
+    inst = 'z';
+
+    while(!valid){
+      scanf(" %c", &inst);
+      if(inst == 'n' || inst == 's' ||inst == 'e' || inst == 'w' || inst == 'f' || inst == 'q'){
+        valid = true;
+        if(inst == 'f'){
+          scanf(" %d", &x_tele);
+          scanf(" %d", &y_tele);
+          if(x_tele < 0 || x_tele > 398 || y_tele < 0 || y_tele > 398){
+            valid = false;
+            printf("Please Enter coordinates between [0,0] and [398,398]\n");
+          }
+        }
+
+        
+      } else{
+        printf("Please input a valid command: north(n), south(s), east(e), west(w), or fly(f x y)\n");
+      }
+      
+    }
+    
+
+    uint8_t n_temp, s_temp, e_temp, w_temp;
+    if(inst == 'n'){
+      if(move(&w, &n_temp, &s_temp, &e_temp, &w_temp, w.curr_x, w.curr_y-1)){
+        if(w.world[w.curr_y-1][w.curr_x] != 0){ // if the square is already discovered, just move the cursor and print the already discovered map
+          w.curr_y = w.curr_y - 1;
+        } else{
+          w.curr_y = w.curr_y - 1;
+          w.world[w.curr_y][w.curr_x] = malloc(sizeof(*w.world[w.curr_y][w.curr_x]));
+          map_t temp_map;
+          temp_map.n = n_temp;
+          temp_map.s = s_temp;
+          temp_map.e = e_temp;
+          temp_map.w = w_temp;
+          new_map(&w, &temp_map);
+          w.world[w.curr_y][w.curr_x] = &temp_map;
+          if(w.curr_x == 0 || w.curr_x == 398 || w.curr_y == 0 || w.curr_y == 398){
+            block_exits(&w, w.curr_x, w.curr_y);
+          }
+        }
+      }
+    } else if(inst == 's'){
+      if(move(&w, &n_temp, &s_temp, &e_temp, &w_temp, w.curr_x, w.curr_y+1)){
+        if(w.world[w.curr_y+1][w.curr_x] != 0){ // if the square is already discovered, just move the cursor and print the already discovered map
+          w.curr_y = w.curr_y + 1;
+        } else{
+          w.curr_y = w.curr_y + 1;
+          w.world[w.curr_y][w.curr_x] = malloc(sizeof(*w.world[w.curr_y][w.curr_x]));
+          map_t temp_map;
+          temp_map.n = n_temp;
+          temp_map.s = s_temp;
+          temp_map.e = e_temp;
+          temp_map.w = w_temp;
+          new_map(&w, &temp_map);
+          w.world[w.curr_y][w.curr_x] = &temp_map;
+          if(w.curr_x == 0 || w.curr_x == 398 || w.curr_y == 0 || w.curr_y == 398){
+            block_exits(&w, w.curr_x, w.curr_y);
+          }
+        }
+      }
+    } else if(inst == 'e'){
+      if(move(&w, &n_temp, &s_temp, &e_temp, &w_temp, w.curr_x+1, w.curr_y)){
+        if(w.world[w.curr_y][w.curr_x+1] != 0){ // if the square is already discovered, just move the cursor and print the already discovered map
+          w.curr_x = w.curr_x + 1;
+        } else{
+          w.curr_x = w.curr_x + 1;
+          w.world[w.curr_y][w.curr_x] = malloc(sizeof(*w.world[w.curr_y][w.curr_x]));
+          map_t temp_map;
+          temp_map.n = n_temp;
+          temp_map.s = s_temp;
+          temp_map.e = e_temp;
+          temp_map.w = w_temp;
+          new_map(&w, &temp_map);
+          w.world[w.curr_y][w.curr_x] = &temp_map;
+          if(w.curr_x == 0 || w.curr_x == 398 || w.curr_y == 0 || w.curr_y == 398){
+            block_exits(&w, w.curr_x, w.curr_y);
+          }
+        }
+      }
+    } else if(inst == 'w'){
+      if(move(&w, &n_temp, &s_temp, &e_temp, &w_temp, w.curr_x-1, w.curr_y)){
+        if(w.world[w.curr_y][w.curr_x-1] != 0){ // if the square is already discovered, just move the cursor and print the already discovered map
+          w.curr_x = w.curr_x - 1;
+        } else{
+          w.curr_x = w.curr_x - 1;
+          w.world[w.curr_y][w.curr_x] = malloc(sizeof(*w.world[w.curr_y][w.curr_x]));
+          map_t temp_map;
+          temp_map.n = n_temp;
+          temp_map.s = s_temp;
+          temp_map.e = e_temp;
+          temp_map.w = w_temp;
+          new_map(&w, &temp_map);
+          w.world[w.curr_y][w.curr_x] = &temp_map;
+          if(w.curr_x == 0 || w.curr_x == 398 || w.curr_y == 0 || w.curr_y == 398){
+            block_exits(&w, w.curr_x, w.curr_y);
+          }
+        }
+      }
+    } else if(inst == 'f'){
+      if(x_tele >= 0 && x_tele <= 398 && y_tele >= 0 && y_tele <= 398){
+        if(move(&w, &n_temp, &s_temp, &e_temp, &w_temp, x_tele, y_tele)){
+          if(w.world[y_tele][x_tele] != 0){ // if the square is already discovered, just move the cursor and print the already discovered map
+            w.curr_x = x_tele;
+            w.curr_y = y_tele;
+          } else{
+            w.curr_x = x_tele;
+            w.curr_y = y_tele;
+            w.world[w.curr_y][w.curr_x] = malloc(sizeof(*w.world[w.curr_y][w.curr_x]));
+            map_t temp_map;
+            temp_map.n = n_temp;
+            temp_map.s = s_temp;
+            temp_map.e = e_temp;
+            temp_map.w = w_temp;
+            new_map(&w, &temp_map);
+            w.world[w.curr_y][w.curr_x] = &temp_map;
+            if(w.curr_x == 0 || w.curr_x == 398 || w.curr_y == 0 || w.curr_y == 398){
+            block_exits(&w, w.curr_x, w.curr_y);
+          }
+          }
+        }
+      }
+      
+    } else if(inst == 'q'){
+      //do nothing, going to quit anyways
+    } else{
+      printf("Please input a valid command: north(n), south(s), east(e), west(w), or fly(f x y)\n");
+    }
+
+  } while(inst != 'q');
+
+
   
   return 0;
 }
