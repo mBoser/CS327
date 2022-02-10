@@ -1,0 +1,12 @@
+For this assignement, I decided to utilize the professors code from assignement 1. Well my code
+for the first assignement worked, it was not structured well enougth to be able to support
+some of the functionality that we will need for this assignement. I added a structure to hold
+the whole world map, as well as the current coordinates of the user. After editing some of the
+functions from the professors code, I was then able to choose weather or not I wanted an exit
+to be randomly generated, or to be dictated by its neighbors. This was a relatively simple task
+if you draw it out rather than trying to visualize everything. I also implemented the probability
+that the buildings would spawn, I tweaked his algorithm a little, because based on the manhattan
+distance, it could possibly be 398 blocks away, which would give you a negative chance of
+spawning a building. The only thing I changed was divided the -45*d by 400 instead of 200, to
+account for this change in distance. This was a very satisfying project to work on and I hope this
+time I can use my code from this assignement, on the next one.

@@ -1,0 +1,8 @@
+2/9/22
+    Imported Prof's code from 1.01
+    Edited some map generation functions to allow me to control where the exits go 
+    Created world structure
+    Added loop to scan user input
+    Created functionality to teleport and move around
+    Added edge detection to seal off exits
+    Added probability that the pokemarts and pokecenters would spawn

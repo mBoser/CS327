@@ -768,26 +768,26 @@ bool move(world_t *wrld, uint8_t *n, uint8_t *s, uint8_t *e, uint8_t *w, int x, 
   return true;
 }
 
-void block_exits(world_t *wrld, int x, int y){
+void block_exits(map_t *m, int x, int y){
   int i;
   if(x == 0){
     for(i = 0; i < 21; i++){
-      wrld->world[y][x]->map[i][0] = ter_boulder;
+      m->map[i][0] = ter_boulder;
     }
   }
   if(y == 0){
     for(i = 0; i < 80; i++){
-      wrld->world[y][x]->map[0][i] = ter_boulder;
+      m->map[0][i] = ter_boulder;
     }
   }
   if(x == 398){
     for(i = 0; i < 21; i++){
-      wrld->world[y][x]->map[i][398] = ter_boulder;
+      m->map[i][79] = ter_boulder;
     }
   }
   if(y == 398){
-    for(i = 0; i < 21; i++){
-      wrld->world[y][x]->map[398][i] = ter_boulder;
+    for(i = 0; i < 80; i++){
+      m->map[20][i] = ter_boulder;
     }
   }
 }
@@ -814,18 +814,19 @@ int main(int argc, char *argv[])
       w.world[i][j] = 0;
     }
   }
-  map_t d;
+  map_t *d;
+  d = malloc(sizeof(map_t));
   w.curr_x = 199;
   w.curr_y = 199;
 
-  w.world[w.curr_y][w.curr_x] = &d;
+  w.world[w.curr_y][w.curr_x] = d;
 
-  d.n = 0;
-  d.s = 0;
-  d.w = 0;
-  d.e = 0;
+  d->n = 0;
+  d->s = 0;
+  d->w = 0;
+  d->e = 0;
 
-  new_map(&w, &d);
+  new_map(&w, d);
 
 
   char inst = 'z';
@@ -833,7 +834,6 @@ int main(int argc, char *argv[])
   int y_tele = -1;
   bool valid = false;
 
-  
    do {
 
     printf("%d %d\n", w.curr_x, w.curr_y);
@@ -873,16 +873,16 @@ int main(int argc, char *argv[])
           w.curr_y = w.curr_y - 1;
         } else{
           w.curr_y = w.curr_y - 1;
-          w.world[w.curr_y][w.curr_x] = malloc(sizeof(*w.world[w.curr_y][w.curr_x]));
-          map_t temp_map;
-          temp_map.n = n_temp;
-          temp_map.s = s_temp;
-          temp_map.e = e_temp;
-          temp_map.w = w_temp;
-          new_map(&w, &temp_map);
-          w.world[w.curr_y][w.curr_x] = &temp_map;
+          d = malloc(sizeof(map_t));
+          w.world[w.curr_y][w.curr_x] = d;
+          d->n = n_temp;
+          d->s = s_temp;
+          d->e = e_temp;
+          d->w = w_temp;
+          new_map(&w, d);
+          //w.world[w.curr_y][w.curr_x] = &d;
           if(w.curr_x == 0 || w.curr_x == 398 || w.curr_y == 0 || w.curr_y == 398){
-            block_exits(&w, w.curr_x, w.curr_y);
+            block_exits(d, w.curr_x, w.curr_y);
           }
         }
       }
@@ -892,16 +892,16 @@ int main(int argc, char *argv[])
           w.curr_y = w.curr_y + 1;
         } else{
           w.curr_y = w.curr_y + 1;
-          w.world[w.curr_y][w.curr_x] = malloc(sizeof(*w.world[w.curr_y][w.curr_x]));
-          map_t temp_map;
-          temp_map.n = n_temp;
-          temp_map.s = s_temp;
-          temp_map.e = e_temp;
-          temp_map.w = w_temp;
-          new_map(&w, &temp_map);
-          w.world[w.curr_y][w.curr_x] = &temp_map;
+          d = malloc(sizeof(map_t));
+          w.world[w.curr_y][w.curr_x] = d;
+          d->n = n_temp;
+          d->s = s_temp;
+          d->e = e_temp;
+          d->w = w_temp;
+          new_map(&w, d);
+          //w.world[w.curr_y][w.curr_x] = &d;
           if(w.curr_x == 0 || w.curr_x == 398 || w.curr_y == 0 || w.curr_y == 398){
-            block_exits(&w, w.curr_x, w.curr_y);
+            block_exits(d, w.curr_x, w.curr_y);
           }
         }
       }
@@ -911,16 +911,16 @@ int main(int argc, char *argv[])
           w.curr_x = w.curr_x + 1;
         } else{
           w.curr_x = w.curr_x + 1;
-          w.world[w.curr_y][w.curr_x] = malloc(sizeof(*w.world[w.curr_y][w.curr_x]));
-          map_t temp_map;
-          temp_map.n = n_temp;
-          temp_map.s = s_temp;
-          temp_map.e = e_temp;
-          temp_map.w = w_temp;
-          new_map(&w, &temp_map);
-          w.world[w.curr_y][w.curr_x] = &temp_map;
+          d = malloc(sizeof(map_t));
+          w.world[w.curr_y][w.curr_x] = d;
+          d->n = n_temp;
+          d->s = s_temp;
+          d->e = e_temp;
+          d->w = w_temp;
+          new_map(&w, d);
+          //w.world[w.curr_y][w.curr_x] = &d;
           if(w.curr_x == 0 || w.curr_x == 398 || w.curr_y == 0 || w.curr_y == 398){
-            block_exits(&w, w.curr_x, w.curr_y);
+            block_exits(d, w.curr_x, w.curr_y);
           }
         }
       }
@@ -930,16 +930,16 @@ int main(int argc, char *argv[])
           w.curr_x = w.curr_x - 1;
         } else{
           w.curr_x = w.curr_x - 1;
-          w.world[w.curr_y][w.curr_x] = malloc(sizeof(*w.world[w.curr_y][w.curr_x]));
-          map_t temp_map;
-          temp_map.n = n_temp;
-          temp_map.s = s_temp;
-          temp_map.e = e_temp;
-          temp_map.w = w_temp;
-          new_map(&w, &temp_map);
-          w.world[w.curr_y][w.curr_x] = &temp_map;
+          d = malloc(sizeof(map_t));
+          w.world[w.curr_y][w.curr_x] = d;
+          d->n = n_temp;
+          d->s = s_temp;
+          d->e = e_temp;
+          d->w = w_temp;
+          new_map(&w, d);
+          //w.world[w.curr_y][w.curr_x] = &d;
           if(w.curr_x == 0 || w.curr_x == 398 || w.curr_y == 0 || w.curr_y == 398){
-            block_exits(&w, w.curr_x, w.curr_y);
+            block_exits(d, w.curr_x, w.curr_y);
           }
         }
       }
@@ -952,17 +952,16 @@ int main(int argc, char *argv[])
           } else{
             w.curr_x = x_tele;
             w.curr_y = y_tele;
-            w.world[w.curr_y][w.curr_x] = malloc(sizeof(*w.world[w.curr_y][w.curr_x]));
-            map_t temp_map;
-            temp_map.n = n_temp;
-            temp_map.s = s_temp;
-            temp_map.e = e_temp;
-            temp_map.w = w_temp;
-            new_map(&w, &temp_map);
-            w.world[w.curr_y][w.curr_x] = &temp_map;
+            d = malloc(sizeof(map_t));
+            d->n = n_temp;
+            d->s = s_temp;
+            d->e = e_temp;
+            d->w = w_temp;
+            new_map(&w, d);
+            w.world[w.curr_y][w.curr_x] = d;
             if(w.curr_x == 0 || w.curr_x == 398 || w.curr_y == 0 || w.curr_y == 398){
-            block_exits(&w, w.curr_x, w.curr_y);
-          }
+              block_exits(d, w.curr_x, w.curr_y);
+            }
           }
         }
       }
