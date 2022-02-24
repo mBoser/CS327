@@ -1,0 +1,20 @@
+Main Functions:
+    dijkstra_hiker()
+    dijkstra_rival()
+    get_weight()
+
+Use: 
+    make
+    ./poke327
+
+For this assignment, I started with professors code from 1.01, and then built off of his dijkstras algorithm.
+I implemented two path finding algorithms, one for the rival (dijkstra_rival) and one for the hiker(dijkstra_hiker), 
+these are super similar execept for what gets added to the heap as well as a few other minor tweaks, such as my 
+function call to my get_weight() function. This is the main driving fxn to calculate the distance between two nodes
+while factoring in the weights of each terrain type. The other main changes from his path algorithm to my algorithms
+is that I need to also check for diagonal directions as well. This was quite trivial. I have a very annoying bug that
+has made its way into my implementation. I don't have the bandwidth to try to debug it more. Currenlty, the hiker
+implementation works flawlessly, but with the rival, I get a seg fault about 20% of the time, when the algorithm gets
+backed into a corner, such as on an exit, with no valid neighbors. I have looked over it for a while but do not have the
+time to debug it further. To place the PC I just took a random x value and then dropped it down until I reached a path,
+and thats where I placed it at. 

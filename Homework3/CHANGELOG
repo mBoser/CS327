@@ -1,0 +1,23 @@
+2/9/22
+    Imported Prof's code from 1.01
+    Edited some map generation functions to allow me to control where the exits go 
+    Created world structure
+    Added loop to scan user input
+    Created functionality to teleport and move around
+    Added edge detection to seal off exits
+    Added probability that the pokemarts and pokecenters would spawn
+
+Homework 1.03
+
+2/23/22
+    Took code from 1.02
+    Shelled out main to only print one map
+    Created dijkstras for hiker
+    Debugged hiker problems
+    Added print function for hiker map
+    Created dijkstras for rivals
+    Debugged rival dijkstras
+    Still have one problem that exists in about 15% of runs
+    Added print functionality for the rivals
+    Added computation for both hiker and rival in main
+    Printed all three maps in main
