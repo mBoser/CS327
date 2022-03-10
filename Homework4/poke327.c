@@ -8,8 +8,8 @@
 #include <sys/time.h>
 #include <assert.h>
 #include <unistd.h>
-
 #include "heap.h"
+#include <stdbool.h>
 
 #define malloc(size) ({          \
   void *_tmp;                    \
@@ -81,6 +81,8 @@ typedef struct trainer {
   character_type_t type;
   char dir;
   terrain_type_t ter;
+  int cost;
+  bool display;
 } trainer_t;
 
 typedef struct map {
@@ -831,7 +833,7 @@ static void print_map()
       if (world.pc.pos[dim_x] == x &&
           world.pc.pos[dim_y] == y) {
         putchar('@');
-      } else if(world.trainers[y][x].pos[0] != -1){
+      } else if(world.trainers[y][x].display){
           if(world.trainers[y][x].type == char_hiker){
             putchar('h');
           } else if(world.trainers[y][x].type == char_rival){
@@ -920,23 +922,7 @@ static int32_t rival_cmp(const void *key, const void *with) {
 }
 
 static int32_t trainer_cmp(const void *key, const void *with) {
-  int32_t key_cost, with_cost;
-  character_type_t k_type, w_type;
-  if(((trainer_t *) key)->type > 3){
-    k_type = 3;
-  } else{
-    k_type = ((trainer_t *) key)->type;
-  }
-  if(((trainer_t *) with)->type > 3){
-    w_type = 3;
-  } else{
-    w_type = ((trainer_t *) with)->type;
-  }
-
-  key_cost = move_cost[k_type][world.cur_map->map[(((trainer_t *) key)->next_pos[1])][(((trainer_t *) key)->next_pos[0])]];
-  with_cost = move_cost[w_type][world.cur_map->map[(((trainer_t *) with)->next_pos[1])][(((trainer_t *) with)->next_pos[0])]];
-
-  return (key_cost - with_cost);
+  return (((((trainer_t *) key)->cost) - ((trainer_t *) with)->cost));
 }
 
 void pathfind(map_t *m)
@@ -1178,7 +1164,7 @@ void init_trainers(uint16_t num_trainers, map_t *m)
 
   for(y = 0; y < MAP_Y; y++){
     for(x = 0; x < MAP_X; x++){
-      world.trainers[y][x].pos[0] = -1;
+      world.trainers[y][x].display = false;
     }
   }
 
@@ -1189,7 +1175,6 @@ void init_trainers(uint16_t num_trainers, map_t *m)
       x = rand() % (MAP_X - 2) + 1;
       y = rand() % (MAP_Y - 2) + 1;
     } while (world.hiker_dist[y][x] == INT_MAX);
-    printf("Placed with weight here %d\n", world.rival_dist[y][x]);
     world.trainers[y][x].pos[0] = x;
     world.trainers[y][x].pos[1] = y;
     world.trainers[y][x].next_pos[0] = x;
@@ -1197,6 +1182,8 @@ void init_trainers(uint16_t num_trainers, map_t *m)
     world.trainers[y][x].type = char_hiker;
     world.trainers[y][x].dir = 'z';
     world.trainers[y][x].ter = m->map[y][x];
+    world.trainers[y][x].cost = 0;
+    world.trainers[y][x].display = true;
 
   } else if(num_trainers == 2){
     //Generate a hiker and a rival
@@ -1204,7 +1191,6 @@ void init_trainers(uint16_t num_trainers, map_t *m)
       x = rand() % (MAP_X - 2) + 1;
       y = rand() % (MAP_Y - 2) + 1;
     } while (world.hiker_dist[y][x] == INT_MAX);
-    printf("Placed with weight here %d\n", world.rival_dist[y][x]);
     world.trainers[y][x].pos[0] = x;
     world.trainers[y][x].pos[1] = y;
     world.trainers[y][x].next_pos[0] = x;
@@ -1212,12 +1198,13 @@ void init_trainers(uint16_t num_trainers, map_t *m)
     world.trainers[y][x].type = char_hiker;
     world.trainers[y][x].dir = 'z';
     world.trainers[y][x].ter = m->map[y][x];
+    world.trainers[y][x].cost = 0;
+    world.trainers[y][x].display = true;
 
     do {
       x = rand() % (MAP_X - 2) + 1;
       y = rand() % (MAP_Y - 2) + 1;
-    } while ((world.rival_dist[y][x] == INT_MAX) && (world.trainers[y][x].pos[0] == -1));
-    printf("Placed with weight here %d\n", world.rival_dist[y][x]);
+    } while ((world.rival_dist[y][x] == INT_MAX) && (!world.trainers[y][x].display));
     world.trainers[y][x].pos[0] = x;
     world.trainers[y][x].pos[1] = y;
     world.trainers[y][x].next_pos[0] = x;
@@ -1225,6 +1212,8 @@ void init_trainers(uint16_t num_trainers, map_t *m)
     world.trainers[y][x].type = char_rival;
     world.trainers[y][x].dir = 'z';
     world.trainers[y][x].ter = m->map[y][x];
+    world.trainers[y][x].cost = 0;
+    world.trainers[y][x].display = true;
 
   } else if(num_trainers > 2){
     //Generate a hiker, a rival, and a mix of others
@@ -1232,7 +1221,6 @@ void init_trainers(uint16_t num_trainers, map_t *m)
       x = rand() % (MAP_X - 2) + 1;
       y = rand() % (MAP_Y - 2) + 1;
     } while (world.hiker_dist[y][x] == INT_MAX);
-    printf("Placed with weight here %d\n", world.rival_dist[y][x]);
     world.trainers[y][x].pos[0] = x;
     world.trainers[y][x].pos[1] = y;
     world.trainers[y][x].next_pos[0] = x;
@@ -1240,12 +1228,13 @@ void init_trainers(uint16_t num_trainers, map_t *m)
     world.trainers[y][x].type = char_hiker;
     world.trainers[y][x].dir = 'z';
     world.trainers[y][x].ter = m->map[y][x];
+    world.trainers[y][x].cost = 0;
+    world.trainers[y][x].display = true;
 
     do {
       x = rand() % (MAP_X - 2) + 1;
       y = rand() % (MAP_Y - 2) + 1;
-    } while ((world.rival_dist[y][x] == INT_MAX) && (world.trainers[y][x].pos[0] == -1));
-    printf("Placed with weight here %d\n", world.rival_dist[y][x]);
+    } while ((world.rival_dist[y][x] == INT_MAX) && (!world.trainers[y][x].display));
     world.trainers[y][x].pos[0] = x;
     world.trainers[y][x].pos[1] = y;
     world.trainers[y][x].next_pos[0] = x;
@@ -1253,6 +1242,8 @@ void init_trainers(uint16_t num_trainers, map_t *m)
     world.trainers[y][x].type = char_rival;
     world.trainers[y][x].dir = 'z';
     world.trainers[y][x].ter = m->map[y][x];
+    world.trainers[y][x].cost = 0;
+    world.trainers[y][x].display = true;
     
     int i;
     for(i = 2; i < num_trainers; i++){
@@ -1260,8 +1251,7 @@ void init_trainers(uint16_t num_trainers, map_t *m)
       do {
         x = rand() % (MAP_X - 2) + 1;
         y = rand() % (MAP_Y - 2) + 1;
-      } while ((world.rival_dist[y][x] == INT_MAX) && (world.trainers[y][x].pos[0] == -1));  //Use rival distance so the player can reach the trainer, regarless of what gets spawned
-      printf("Placed with weight here %d\n", world.rival_dist[y][x]);
+      } while ((world.rival_dist[y][x] == INT_MAX) && (!world.trainers[y][x].display));  //Use rival distance so the player can reach the trainer, regarless of what gets spawned
       world.trainers[y][x].pos[0] = x;
       world.trainers[y][x].pos[1] = y;
       world.trainers[y][x].next_pos[0] = x;
@@ -1272,6 +1262,8 @@ void init_trainers(uint16_t num_trainers, map_t *m)
       world.trainers[y][x].type = r;
       world.trainers[y][x].dir = 'z';
       world.trainers[y][x].ter = m->map[y][x];
+      world.trainers[y][x].cost = 0;
+      world.trainers[y][x].display = true;
     }
 
   } else{
@@ -1325,6 +1317,7 @@ void set_logical_next(trainer_t *t, map_t *m){
         t->next_pos[1] = t->pos[1] + 1;
       }
     }
+    t->cost = t->cost + ter_cost(t->next_pos[0], t->next_pos[1], char_rival);
 
   } else if(t->type == char_hiker){
     //Find lowest cost around using hiker dist map
@@ -1371,6 +1364,7 @@ void set_logical_next(trainer_t *t, map_t *m){
         t->next_pos[1] = t->pos[1] + 1;
       }
     }
+    t->cost = t->cost + ter_cost(t->next_pos[0], t->next_pos[1], char_hiker);
   } else if(t->type == char_pacer){
     if(t->dir == 'z'){
       int d = rand_range(0,3);
@@ -1383,52 +1377,101 @@ void set_logical_next(trainer_t *t, map_t *m){
       } else if(d == 3){
         t->dir = 'w';
       }
-    } else{
+    } 
+    
       if(t->dir == 'n'){
-        if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
-          if((ter_cost(t->pos[0], t->pos[1]-1, char_other)) != INT_MAX){
-            t->next_pos[0] = t->pos[0];
-            t->next_pos[1] = t->pos[1] - 1;
-          } else{
-            t->next_pos[0] = t->pos[0];
-            t->next_pos[1] = t->pos[1] + 1;
-            t->dir = 's';
+        //if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
+          if(((ter_cost(t->pos[0], t->pos[1]-1, char_other)) != INT_MAX)){
+            if(!world.trainers[t->pos[1]-1][t->pos[0]].display){
+              printf("Cost: %d\n", ter_cost(t->pos[0], t->pos[1]-1, char_other));
+              t->next_pos[0] = t->pos[0];
+              t->next_pos[1] = t->pos[1] - 1;
+            }
+          } else if(((ter_cost(t->pos[0], t->pos[1]+1, char_other)) != INT_MAX)){
+            if(!world.trainers[t->pos[1]+1][t->pos[0]].display){
+              printf("Cost: %d\n", ter_cost(t->pos[0], t->pos[1]+1, char_other));
+              t->next_pos[0] = t->pos[0];
+              t->next_pos[1] = t->pos[1] + 1;
+              t->dir = 's';
+            }
+          }else{
+            printf("Cost N: %d\n", ter_cost(t->pos[0], t->pos[1]-1, char_other));
+            printf("Cost S: %d\n", ter_cost(t->pos[0], t->pos[1]+1, char_other));
+            printf("Something went wrong or stuck\n");
+            //t->cost = INT_MAX;
           }
-        }
+        //}
       } else if(t->dir == 's'){
-        if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
-          if((ter_cost(t->pos[0], t->pos[1]+1, char_other)) != INT_MAX){
-            t->next_pos[0] = t->pos[0];
-            t->next_pos[1] = t->pos[1] + 1;
-          } else{
-            t->next_pos[0] = t->pos[0];
-            t->next_pos[1] = t->pos[1] - 1;
-            t->dir = 'n';
+        //if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
+          if((ter_cost(t->pos[0], t->pos[1]+1, char_other) != INT_MAX)){
+            if((!world.trainers[t->pos[1]+1][t->pos[0]].display)){
+              printf("Cost: %d\n", ter_cost(t->pos[0], t->pos[1]+1, char_other));
+              t->next_pos[0] = t->pos[0];
+              t->next_pos[1] = t->pos[1] + 1;
+            }
+          } else if(((ter_cost(t->pos[0], t->pos[1]-1, char_other)) != INT_MAX)){
+            if((!world.trainers[t->pos[1]-1][t->pos[0]].display)){
+              printf("Cost: %d\n", ter_cost(t->pos[0], t->pos[1]-1, char_other));
+              t->next_pos[0] = t->pos[0];
+              t->next_pos[1] = t->pos[1] - 1;
+              t->dir = 'n';
+            } 
+          }else{
+            printf("Cost N: %d\n", ter_cost(t->pos[0], t->pos[1]-1, char_other));
+            printf("Cost S: %d\n", ter_cost(t->pos[0], t->pos[1]+1, char_other));
+            printf("Something went wrong or stuck\n");
+            //t->cost = INT_MAX;
           }
-        }
+        //}
       } else if(t->dir == 'e'){
-        if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
-          if((ter_cost(t->pos[0] + 1, t->pos[1], char_other)) != INT_MAX){
-            t->next_pos[0] = t->pos[0] + 1;
-            t->next_pos[1] = t->pos[1];
+        //if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
+          if((((ter_cost(t->pos[0]+1, t->pos[1], char_other)) != INT_MAX))){
+            if(!world.trainers[t->pos[1]][t->pos[0]+1].display){
+              printf("Cost: %d\n", ter_cost(t->pos[0] +1, t->pos[1], char_other));
+              t->next_pos[0] = t->pos[0] + 1;
+              t->next_pos[1] = t->pos[1];
+            }
+          } else if((ter_cost(t->pos[0]-1, t->pos[1], char_other) != INT_MAX)){
+            if(!world.trainers[t->pos[1]][t->pos[0]-1].display){
+              printf("Cost: %d\n", ter_cost(t->pos[0] -1, t->pos[1], char_other));
+              t->next_pos[0] = t->pos[0] - 1;
+              t->next_pos[1] = t->pos[1];
+              t->dir = 'w';
+            }
           } else{
-            t->next_pos[0] = t->pos[0] - 1;
-            t->next_pos[1] = t->pos[1];
-            t->dir = 'w';
+            printf("Cost E: %d\n", ter_cost(t->pos[0]+1, t->pos[1], char_other));
+            printf("Cost W: %d\n", ter_cost(t->pos[0]-1, t->pos[1], char_other));
+            printf("Something went wrong or stuck\n");
+            //t->cost = INT_MAX;
           }
-        }
+        //}
       } else if(t->dir == 'w'){
-        if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
-          if((ter_cost(t->pos[0] - 1, t->pos[1], char_other)) != INT_MAX){
-            t->next_pos[0] = t->pos[0] - 1;
-            t->next_pos[1] = t->pos[1];
+        //if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
+          if(((ter_cost(t->pos[0]-1, t->pos[1], char_other)) != INT_MAX)){
+            if(!world.trainers[t->pos[1]][t->pos[0]-1].display){
+              printf("Cost: %d\n", ter_cost(t->pos[0] -1, t->pos[1], char_other));
+              t->next_pos[0] = t->pos[0] - 1;
+              t->next_pos[1] = t->pos[1];
+            }
+          } else if(((ter_cost(t->pos[0]+1, t->pos[1], char_other)) != INT_MAX)){
+            if(!world.trainers[t->pos[1]][t->pos[0]+1].display){
+              printf("Cost: %d\n", ter_cost(t->pos[0] +1, t->pos[1], char_other));
+              t->next_pos[0] = t->pos[0] + 1;
+              t->next_pos[1] = t->pos[1];
+              t->dir = 'e';
+            }
+
           } else{
-            t->next_pos[0] = t->pos[0] + 1;
-            t->next_pos[1] = t->pos[1];
-            t->dir = 'e';
+            printf("Cost E: %d\n", ter_cost(t->pos[0]+1, t->pos[1], char_other));
+            printf("Cost W: %d\n", ter_cost(t->pos[0]-1, t->pos[1], char_other));
+            printf("Something went wrong or stuck\n");
+            //t->cost = INT_MAX;
           }
-        }
+        //}
       }
+    
+    if(t->cost != INT_MAX){
+      t->cost = t->cost + ter_cost(t->next_pos[0], t->next_pos[1], char_other);
     }
   } else if(t->type == char_wanderer){
     if(t->dir == 'z'){
@@ -1444,58 +1487,82 @@ void set_logical_next(trainer_t *t, map_t *m){
       }
     } else{
       if(t->dir == 'n'){
-        if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
+        //if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
           if(((ter_cost(t->pos[0], t->pos[1]-1, char_other)) != INT_MAX) && m->map[t->pos[1] - 1][t->pos[0]] == t->ter){
-            t->next_pos[0] = t->pos[0];
-            t->next_pos[1] = t->pos[1] - 1;
+            if(!world.trainers[t->pos[1]-1][t->pos[0]].display){
+              t->next_pos[0] = t->pos[0];
+              t->next_pos[1] = t->pos[1] - 1;
+            }
+          } else if(((ter_cost(t->pos[0], t->pos[1]+1, char_other)) != INT_MAX) && m->map[t->pos[1] + 1][t->pos[0]] == t->ter){
+            if(!world.trainers[t->pos[1]+1][t->pos[0]].display){
+              t->next_pos[0] = t->pos[0];
+              t->next_pos[1] = t->pos[1] + 1;
+              t->dir = 's';
+            }
           } else{
-            //TODO add rando movment and more error checking here
-            t->next_pos[0] = t->pos[0];
-            t->next_pos[1] = t->pos[1] + 1;
-            t->dir = 's';
+            //t->cost = INT_MAX;
           }
-        }
+        //}
       } else if(t->dir == 's'){
         if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
           if(((ter_cost(t->pos[0], t->pos[1]+1, char_other)) != INT_MAX) && m->map[t->pos[1] + 1][t->pos[0]] == t->ter){
-            t->next_pos[0] = t->pos[0];
-            t->next_pos[1] = t->pos[1] + 1;
-          } else{
-            //TODO add rando movment and more error checking here
-            t->next_pos[0] = t->pos[0];
-            t->next_pos[1] = t->pos[1] - 1;
-            t->dir = 'n';
+            if(!world.trainers[t->pos[1]+1][t->pos[0]].display){
+              t->next_pos[0] = t->pos[0];
+              t->next_pos[1] = t->pos[1] + 1;
+            }
+          } else if(((ter_cost(t->pos[0], t->pos[1]-1, char_other)) != INT_MAX) && m->map[t->pos[1] - 1][t->pos[0]] == t->ter){
+            if(!world.trainers[t->pos[1]-1][t->pos[0]].display){
+              t->next_pos[0] = t->pos[0];
+              t->next_pos[1] = t->pos[1] - 1;
+              t->dir = 'n';
+            }
+          }else{
+            //t->cost = INT_MAX;
           }
         }
       } else if(t->dir == 'e'){
-        if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
+        //if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
           if(((ter_cost(t->pos[0] + 1, t->pos[1], char_other)) != INT_MAX) && m->map[t->pos[1]][t->pos[0] + 1] == t->ter){
-            t->next_pos[0] = t->pos[0] + 1;
-            t->next_pos[1] = t->pos[1];
+            if(!world.trainers[t->pos[1]][t->pos[0] + 1].display){
+              t->next_pos[0] = t->pos[0] + 1;
+              t->next_pos[1] = t->pos[1];
+            }
+          } else if(((ter_cost(t->pos[0] - 1, t->pos[1], char_other)) != INT_MAX) && m->map[t->pos[1]][t->pos[0] - 1] == t->ter){
+            if(!world.trainers[t->pos[1]][t->pos[0] - 1].display){
+              t->next_pos[0] = t->pos[0] - 1;
+              t->next_pos[1] = t->pos[1];
+              t->dir = 'w';
+            }
           } else{
-            //TODO add rando movment and more error checking here
-            t->next_pos[0] = t->pos[0] - 1;
-            t->next_pos[1] = t->pos[1];
-            t->dir = 'w';
+            //t->cost = INT_MAX;
           }
-        }
+        //}
       } else if(t->dir == 'w'){
-        if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
+        //if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
           if(((ter_cost(t->pos[0] - 1, t->pos[1], char_other)) != INT_MAX) && m->map[t->pos[1]][t->pos[0] - 1] == t->ter){
-            t->next_pos[0] = t->pos[0] - 1;
-            t->next_pos[1] = t->pos[1];
+            if(!world.trainers[t->pos[1]][t->pos[0] - 1].display){
+              t->next_pos[0] = t->pos[0] - 1;
+              t->next_pos[1] = t->pos[1];
+            }
+          } else if(((ter_cost(t->pos[0] - 1, t->pos[1], char_other)) != INT_MAX) && m->map[t->pos[1]][t->pos[0] - 1] == t->ter){
+            if(!world.trainers[t->pos[1]][t->pos[0] + 1].display){
+              t->next_pos[0] = t->pos[0] + 1;
+              t->next_pos[1] = t->pos[1];
+              t->dir = 'e';
+            }
           } else{
-            //TODO add rando movment and more error checking here
-            t->next_pos[0] = t->pos[0] + 1;
-            t->next_pos[1] = t->pos[1];
-            t->dir = 'e';
+            //t->cost = INT_MAX;
           }
-        }
+        //}
       }
+    }
+    if(t->cost != INT_MAX){
+      t->cost = t->cost + ter_cost(t->next_pos[0], t->next_pos[1], char_other);
     }
   } else if(t->type == char_stationary){
     //Vibe
   } else if(t->type == char_rand_walker){
+    int new_dir = rand_range(0,3);
     if(t->dir == 'z'){
       int d = rand_range(0,3);
       if(d == 0){
@@ -1509,53 +1576,68 @@ void set_logical_next(trainer_t *t, map_t *m){
       }
     } else{
       if(t->dir == 'n'){
-        if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
+        //if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
           if((ter_cost(t->pos[0], t->pos[1]-1, char_other)) != INT_MAX){
-            t->next_pos[0] = t->pos[0];
-            t->next_pos[1] = t->pos[1] - 1;
-          } else{
-            //TODO add rando movment and more error checking here
-            t->next_pos[0] = t->pos[0];
-            t->next_pos[1] = t->pos[1] + 1;
+            if(!world.trainers[t->pos[1]-1][t->pos[0]].display){
+              t->next_pos[0] = t->pos[0];
+              t->next_pos[1] = t->pos[1] - 1;
+            }
+          } else if(new_dir == 0 || new_dir == 1){
             t->dir = 's';
-          }
-        }
-      } else if(t->dir == 's'){
-        if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
-          if((ter_cost(t->pos[0], t->pos[1]+1, char_other)) != INT_MAX){
-            t->next_pos[0] = t->pos[0];
-            t->next_pos[1] = t->pos[1] + 1;
+          } else if(new_dir == 2){
+            t->dir = 'e';
           } else{
-            //TODO add rando movment and more error checking here
-            t->next_pos[0] = t->pos[0];
-            t->next_pos[1] = t->pos[1] - 1;
-            t->dir = 'n';
-          }
-        }
-      } else if(t->dir == 'e'){
-        if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
-          if((ter_cost(t->pos[0] + 1, t->pos[1], char_other)) != INT_MAX){
-            t->next_pos[0] = t->pos[0] + 1;
-            t->next_pos[1] = t->pos[1];
-          } else{
-            //TODO add rando movment and more error checking here
-            t->next_pos[0] = t->pos[0] - 1;
-            t->next_pos[1] = t->pos[1];
             t->dir = 'w';
           }
-        }
-      } else if(t->dir == 'w'){
-        if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
-          if((ter_cost(t->pos[0] - 1, t->pos[1], char_other)) != INT_MAX){
-            t->next_pos[0] = t->pos[0] - 1;
-            t->next_pos[1] = t->pos[1];
+        //}
+      } else if(t->dir == 's'){
+        //if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
+          if((ter_cost(t->pos[0], t->pos[1]+1, char_other)) != INT_MAX){
+            if(!world.trainers[t->pos[1]+1][t->pos[0]].display){
+              t->next_pos[0] = t->pos[0];
+              t->next_pos[1] = t->pos[1] + 1;
+            }
+          } else if(new_dir == 0 || new_dir == 1){
+            t->dir = 'n';
+          } else if(new_dir == 2){
+            t->dir = 'e';
           } else{
-            //TODO add rando movment and more error checking here
-            t->next_pos[0] = t->pos[0] + 1;
-            t->next_pos[1] = t->pos[1];
+            t->dir = 'w';
+          }
+        //}
+      } else if(t->dir == 'e'){
+        //if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
+          if((ter_cost(t->pos[0] + 1, t->pos[1], char_other)) != INT_MAX){
+            if(!world.trainers[t->pos[1]][t->pos[0]+1].display){
+              t->next_pos[0] = t->pos[0] + 1;
+              t->next_pos[1] = t->pos[1];
+            }
+          } else if(new_dir == 0){
+            t->dir = 'n';
+          } else if(new_dir == 1){
+            t->dir = 's';
+          } else{
+            t->dir = 'w';
+          }
+        //}
+      } else if(t->dir == 'w'){
+        //if((t->pos[0] == t->next_pos[0]) && (t->pos[1] == t->next_pos[1])){
+          if((ter_cost(t->pos[0] - 1, t->pos[1], char_other)) != INT_MAX){
+            if(!world.trainers[t->pos[1]][t->pos[0]-1].display){
+              t->next_pos[0] = t->pos[0] - 1;
+              t->next_pos[1] = t->pos[1];
+            }
+          } else if(new_dir == 0){
+            t->dir = 'n';
+          } else if(new_dir == 1){
+            t->dir = 's';
+          } else{
             t->dir = 'e';
           }
-        }
+        //}
+      }
+      if(t->cost != INT_MAX){
+        t->cost = t->cost + ter_cost(t->next_pos[0], t->next_pos[1], char_other);
       }
     }
   }
@@ -1599,7 +1681,7 @@ void print_trainers()
 
   for (y = 0; y < MAP_Y; y++) {
     for (x = 0; x < MAP_X; x++) {
-      if (world.trainers[y][x].pos[0] == -1) {
+      if (world.trainers[y][x].display == false) {
         printf(".");
       } else{
         if(world.trainers[y][x].type == char_rival){
@@ -1666,36 +1748,46 @@ int main(int argc, char *argv[])
 
   for (y = 1; y < MAP_Y - 1; y++) {
     for (x = 1; x < MAP_X - 1; x++) {
-      if(world.trainers[y][x].pos[0] != -1) {
+      if(world.trainers[y][x].display && world.trainers[y][x].type != char_stationary) {
         heap_insert(&h, &world.trainers[y][x]);
       }
     }
   }
-
   while(1){
-    static trainer_t *t;
-    sleep(.1);
+    trainer_t *t;
+    sleep(1);
     if(h.size > 0){
       t = heap_remove_min(&h);
     } else{
       break;
     }
     print_map();
-    set_logical_next(t, world.cur_map);
-    world.trainers[t->next_pos[1]][t->next_pos[0]] = world.trainers[t->pos[1]][t->pos[0]];
     int temp_x = t->pos[0];
     int temp_y = t->pos[1];
-    world.trainers[temp_y][temp_x].pos[0] = -1;
+    set_logical_next(t, world.cur_map);
+    //memcpy(&world.trainers[t->next_pos[1]][t->next_pos[0]], t, sizeof(trainer_t));
+
+    //Doing this sloppy because other times it seemed like it was passing the address to it, ugly but effective I suppose
+    world.trainers[t->next_pos[1]][t->next_pos[0]].cost = t->cost;
+    world.trainers[t->next_pos[1]][t->next_pos[0]].ter = t->ter;
+    world.trainers[t->next_pos[1]][t->next_pos[0]].dir = t->dir;
+    world.trainers[t->next_pos[1]][t->next_pos[0]].type = t->type;
+    world.trainers[t->next_pos[1]][t->next_pos[0]].pos[0] = t->pos[0];
+    world.trainers[t->next_pos[1]][t->next_pos[0]].pos[1] = t->pos[1];
+    world.trainers[t->next_pos[1]][t->next_pos[0]].next_pos[0] = t->pos[0];
+    world.trainers[t->next_pos[1]][t->next_pos[0]].next_pos[1] = t->pos[1];
+    world.trainers[t->next_pos[1]][t->next_pos[0]].display = true;
+
+    //world.trainers[t->next_pos[1]][t->next_pos[0]] = *t;
+
     t->pos[0] = t->next_pos[0];
     t->pos[1] = t->next_pos[1];
-    
+    if(t->cost != 0 && !(temp_x == t->pos[0] && temp_y == t->pos[1])){
+      world.trainers[temp_y][temp_x].display = false;
+    }
     heap_insert(&h, t);
+    
   }
-  
-  
-  print_hiker_dist();
-  print_rival_dist();
-
   return 0;
 
   do {

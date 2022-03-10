@@ -1,0 +1,36 @@
+Main Functions:
+    init_trainers()
+    set_logical_next()
+
+Use: 
+    make
+    ./poke327 [seed] [--numtrainers <NUM>]
+
+For this assignment, I started with professors code from 1.03, and built off of that.
+After adding argument parsing I got some general architecture set up, such as the structure
+for the trainers and what not. After all that was done, I got working on some of the core 
+helper functions that made this project work. The first being init_trainers. This function
+took in the argument for how many trainers, and placed them on the map, all in valid locations.
+After they were all placed, I had to figure out how to move them, so I decided to go with a
+function that I named set_logical_next, which took a specific trainer, and depending on what
+kind it was or what its current values are, it would set the "next_pos" position variable of
+that trainer for the logic in main to do the rest. This function pretty much holds all the logic
+for when to move, how much it will cost, where to move, and where to move upon collision.
+I also added a print_trainers function that was mainly for debugging purposes. The flowchart for
+how the movment goes as follows:
+    Fills heap with trainers
+    while(1)
+        Pulls out min cost trainer
+        calculates the next movement(and cost for it)
+        Moves the character pointer
+        Makes a copy of the struct onto the trainer map
+        Tells main to not display the old trainer
+        Inserts trainer back into the heap
+
+This flowchart works almost perfectly except for a very small bug that is so frustrating I just
+cannot figure it out. There is a bug where if a trainer leaves its starting position, and hits
+a wall, it will turn around like it is supposed to, but the moment it enters the cell where it
+was originally spawned in, it gets stuck forever and cannot move. This is easily replicated by
+watching a wanderer or a pacer, as they are linear in movement. All my logic works perfectly
+for all the trainers, but this one bug just put me down. I also have no logic to do anything
+once the hiker/rivals reach the PC so they just kinda bounce around near it.
