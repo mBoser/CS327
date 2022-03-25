@@ -103,6 +103,7 @@ typedef struct character {
   pair_t pos;
   char symbol;
   int next_turn;
+  bool defeated;
 } character_t;
 
 typedef struct map {
@@ -957,6 +958,7 @@ void new_hiker()
   c->npc->dir[dim_y] = 0;
   c->symbol = 'h';
   c->next_turn = 0;
+  c->defeated = false;
   heap_insert(&world.cur_map->turn, c);
 
   printf("Hiker at %d,%d\n", pos[dim_x], pos[dim_y]);
@@ -983,6 +985,7 @@ void new_rival()
   c->npc->dir[dim_y] = 0;
   c->symbol = 'r';
   c->next_turn = 0;
+  c->defeated = false;
   heap_insert(&world.cur_map->turn, c);
 }
 
@@ -1022,6 +1025,7 @@ void new_char_other()
   }
   rand_dir(c->npc->dir);
   c->next_turn = 0;
+  c->defeated = false;
   heap_insert(&world.cur_map->turn, c);
 }
 
@@ -1516,69 +1520,229 @@ void print_rival_dist()
   }
 }
 
-void move_player(character_t *pc, uint32_t input, bool in_menu){
+void wipe_screen(){
+  int x, y;
+  for (y = 0; y < MAP_Y; y++)
+  {
+    for (x = 0; x < MAP_X; x++)
+    {
+      mvprintw(y+1, x, " ");
+    }
+  }
+}
+
+void enter_mart(){
+  clear();
+  mvprintw(0, 30, "Welcome to the Cool Mart!");
+  refresh();
+  char exit_cmd;
+  do{
+    exit_cmd = getchar();
+  } while(exit_cmd != 27);
+
+  clear();
+  wipe_screen();
+  refresh();
+}
+
+void enter_center(){
+  clear();
+  mvprintw(0, 30, "Welcome to the Cool Center!");
+  refresh();
+  char exit_cmd;
+  do{
+    exit_cmd = getchar();
+  } while(exit_cmd != 27);
+
+  clear();
+  wipe_screen();
+  refresh();
+}
+
+void enter_battle(){
+  clear();
+  mvprintw(0, 30, "Welcome to Battle!");
+  refresh();
+  char exit_cmd;
+  do{
+    exit_cmd = getchar();
+  } while(exit_cmd != 27);
+
+  clear();
+  wipe_screen();
+  refresh();
+}
+
+void menu(){
+  int x, y;
+  int num_trainers = 0;
+  for(y = 0; y < MAP_Y; y++){
+    for(x = 0; x < MAP_X; x++){
+      if(world.cur_map->cmap[y][x]){
+        if(world.cur_map->cmap[y][x]->symbol != '@'){
+          num_trainers++;
+        }
+      }
+    }
+  }
+
+  character_t trainers[num_trainers];
+  int count = 0;
+  for(y = 0; y < MAP_Y; y++){
+    for(x = 0; x < MAP_X; x++){
+      if(world.cur_map->cmap[y][x]){
+        if(world.cur_map->cmap[y][x]->symbol != '@'){
+          trainers[count].symbol = world.cur_map->cmap[y][x]->symbol;
+          trainers[count].pos[dim_x] = x;
+          trainers[count].pos[dim_y] = y;
+          count++;
+        }
+      }
+    }
+  }
+
+
+
+  char menu_instruction;
+  mvprintw(0, 30, "Num Trainers = %d", num_trainers);
+  refresh();
+  move(0,0);
+  int i;
+  int line = 2;
+  do{
+    line = 2;
+    for(i = 0; i<num_trainers; i++){
+      move(line, 0);
+      int x_dist = trainers[i].pos[dim_x] - world.pc.pos[dim_x];
+      int y_dist = trainers[i].pos[dim_y] - world.pc.pos[dim_y];
+      mvprintw(line, 0, "%c, %d %s %d %s", trainers[i].symbol, abs(y_dist), y_dist >= 0 ? "n" : "s", abs(x_dist), x_dist >= 0 ? "e" : "w");
+      line++;
+      refresh();
+    }
+    menu_instruction = getchar();
+
+  } while(menu_instruction != 27);
+
+  
+}
+
+int look_and_act(character_t *c, pair_t next){
+  if(world.cur_map->map[next[dim_y]][next[dim_x]] == ter_center){
+    enter_center();
+    return 1;
+  } else if(world.cur_map->map[next[dim_y]][next[dim_x]] == ter_mart){
+    enter_mart();
+    return 1;
+  } else if(world.cur_map->cmap[next[dim_y]][next[dim_x]] && world.cur_map->cmap[next[dim_y]][next[dim_x]]->symbol != '@'){
+    enter_battle();
+    world.cur_map->cmap[next[dim_y]][next[dim_x]]->defeated = true;
+    world.cur_map->cmap[next[dim_y]][next[dim_x]] = NULL;
+    return 2;
+  } else if(move_cost[0][world.cur_map->map[next[dim_y]][next[dim_x]]] == INT_MAX){
+    return 3;
+  }
+  return 0;
+}
+
+void move_player(character_t *pc, uint32_t input){
   pair_t next;
   next[dim_x] = pc->pos[dim_x];
   next[dim_y] = pc->pos[dim_y];
-  if(!in_menu){ //only move pc if not in menu
-    switch(input){
-      //up
-      case '8':
-      case 'k':
-        next[dim_y]--;
-        break;
-      //up right
-      case '9':
-      case 'u':
+  switch(input){
+    //up
+    case '8':
+    case 'k':
+      next[dim_y]--;
+      if(look_and_act(pc, next) != 0){
+        next[dim_y]++; //Undo movement
+      }
+      break;
+    //up right
+    case '9':
+    case 'u':
+      next[dim_x]++;
+      next[dim_y]--;
+      if(look_and_act(pc, next) != 0){
+        next[dim_x]--;
+        next[dim_y]++; //Undo movement
+      }
+      break;
+    //up left
+    case '7':
+    case 'y':
+      next[dim_x]--;
+      next[dim_y]--;
+      if(look_and_act(pc, next) != 0){
         next[dim_x]++;
+        next[dim_y]++; //Undo movement
+      }
+      break;
+    //right
+    case '6':
+    case 'l':
+      next[dim_x]++;
+      if(look_and_act(pc, next) != 0){
+        next[dim_x]--;
+      }
+      break;
+    //left
+    case '4':
+    case 'h':
+      next[dim_x]--;
+      if(look_and_act(pc, next) != 0){
+        next[dim_x]++;
+      }
+      break;
+    //down
+    case '2':
+    case 'j':
+      next[dim_y]++;
+      if(look_and_act(pc, next) != 0){
         next[dim_y]--;
-        break;
-      //up left
-      case '7':
-      case 'y':
+      }
+      break;
+    //down right
+    case '3':
+    case 'n':
+      next[dim_x]++;
+      next[dim_y]++;
+      if(look_and_act(pc, next) != 0){
         next[dim_x]--;
         next[dim_y]--;
-        break;
-      //right
-      case '6':
-      case 'l':
+      }
+      break;
+    //down left
+    case '1':
+    case 'b':
+      next[dim_x]--;
+      next[dim_y]++;
+      if(look_and_act(pc, next) != 0){
         next[dim_x]++;
-        break;
-      //left
-      case '4':
-      case 'h':
-        next[dim_x]--;
-        break;
-      //down
-      case '2':
-      case 'j':
-        next[dim_y]++;
-        break;
-      //down right
-      case '3':
-      case 'n':
-        next[dim_x]++;
-        next[dim_y]++;
-        break;
-      //down left
-      case '1':
-      case 'b':
-        next[dim_x]--;
-        next[dim_y]++;
-        break;
-      //Wait
-      case '5':
-      case ' ':
-        break;
+        next[dim_y]--;
+      }
+      break;
+    //Wait
+    case '5':
+    case ' ':
+      break;
 
-      default:
-        break;
-    }
-
-    world.cur_map->cmap[pc->pos[dim_y]][pc->pos[dim_x]] = NULL;
-    world.cur_map->cmap[next[dim_y]][next[dim_y]] = pc;
-    pc->next_turn += 10;
+    default:
+      break;
   }
+  
+  world.cur_map->cmap[pc->pos[dim_y]][pc->pos[dim_x]] = NULL;
+  world.cur_map->cmap[next[dim_y]][next[dim_x]] = pc;
+  
+  if((input == '5' || input == ' ')){
+    pc->next_turn += move_cost[0][world.cur_map->map[next[dim_y]][next[dim_x]]];
+  } else if((next[dim_x] != pc->pos[dim_x] || next[dim_y] != pc->pos[dim_y])){
+    pc->next_turn += move_cost[0][world.cur_map->map[next[dim_y]][next[dim_x]]];
+  }
+  
+
+  pc->pos[dim_x] = next[dim_x];
+  pc->pos[dim_y] = next[dim_y];
+  pathfind(world.cur_map);
 }
 
 void game_loop()
@@ -1594,23 +1758,26 @@ void game_loop()
   refresh();
 
   char input;
-  bool in_menu = false;
-  
+  print_map();
   do {
-  
-    // if(input == 'm'){
-    //   //display menu
-    // }
-    
     c = heap_remove_min(&world.cur_map->turn);
     if (c == &world.pc) {
       input = getchar();
-      move_player(c, input, in_menu);
-      print_map();
-      usleep(250000);
-      
-    } else {
+      if(input == 'm'){
+        clear();
+        menu();
+        clear();
+        refresh();
+        print_map();
+      }else{
+        move_player(c, input);
+        print_map();
+      }
+    } else if(!(c->defeated)){
       move_func[c->npc->mtype](c, d);
+      if(world.cur_map->cmap[d[dim_y]][d[dim_x]] == &world.pc){
+        enter_battle();
+      }
       world.cur_map->cmap[c->pos[dim_y]][c->pos[dim_x]] = NULL;
       world.cur_map->cmap[d[dim_y]][d[dim_x]] = c;
       c->next_turn += move_cost[c->npc->ctype][world.cur_map->map[d[dim_y]]
@@ -1618,7 +1785,10 @@ void game_loop()
       c->pos[dim_y] = d[dim_y];
       c->pos[dim_x] = d[dim_x];
     }
-    heap_insert(&world.cur_map->turn, c);
+    if(!(c->defeated)){
+      heap_insert(&world.cur_map->turn, c);
+    }
+    
   } while(input != 'Q');
 
   endwin();
