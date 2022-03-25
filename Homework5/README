@@ -1,0 +1,45 @@
+Main Functions:
+    game_loop()
+    move_player()
+    look_and_act()
+    enter_battle()
+    enter_mart()
+    enter_center()
+    menu()
+
+Use: 
+    make
+    ./poke327
+
+For this assignment, I started with professors code from 1.04, and built off of that.
+Going about this assignment was a little strange as I have never worked with curses,
+but after getting used to the infrastructure it was not too bad. The core functionality
+is stored in the game_loop() from 1.04, but now there is input gathering every time that
+the user needs to move. From the game loop. The logic for the npc movement is 99% the same
+but now with some checking to see if the trainer has been defeated. Every time it is the
+users time to move, it takes the input and passes it to the move_player function, where it
+does the movement with no error checking, and then checks the current square for collisions,
+which is handled in look_and_act(). This fxn is where you will check to enter a battle, 
+enter a pokemart, or enter a pokecenter, as well as just general collision detection for
+the PC. If there is some collision, the user will be moved back to the previous square
+and no errors will be had. All of the enter_ functions and the menu just hold the user
+in the specified area until the escape key is pressed in which case it will go back to
+the game. That is the basis of how the program works, I didn't get to all the features
+but the known bugs are listed below. Thank you for reading :)
+
+Known Bugs:
+    There is no logic to move between maps :( I did not get too it
+
+    Right away, you need to move the PC to get all of the NPC's to
+    spawn, so if you enter the menu right away, there will be no
+    trainers listed. 
+
+    Trainers cannot initiate the battles, I didn't get to allowing them
+    to be able to do that, but you can still get into battles with all of the
+    trainers by walking into them, in which case you defeat them and they are 
+    taken out of the heap and the map.
+
+    On input of a different character other than the defined set, the cost 
+    of the PC will remain the same, but sometimes other NPC's will move
+    because if they have the same cost, they can sometimes come out before
+    the PC, if that makes sense.
