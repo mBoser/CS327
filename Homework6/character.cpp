@@ -18,14 +18,14 @@ int32_t move_cost[num_character_types][num_terrain_types] = {
   { INT_MAX, INT_MAX, 10, 50, 50, 20, 10, INT_MAX, INT_MAX, INT_MAX },
 };
 
-const char *char_type_name[njum_character_types] = {
+const char *char_type_name[num_character_types] = {
   "PC",
   "Hiker",
   "Rival",
   "Trainer",
 };
 
-static void move_hiker_func(character *c, pair_t dest)
+static void move_hiker_func(character_t *c, pair_t dest)
 {
   int min;
   int base;
@@ -55,7 +55,7 @@ static void move_hiker_func(character *c, pair_t dest)
   }
 }
 
-static void move_rival_func(character *c, pair_t dest)
+static void move_rival_func(character_t *c, pair_t dest)
 {
   int min;
   int base;
@@ -85,7 +85,7 @@ static void move_rival_func(character *c, pair_t dest)
   }
 }
 
-static void move_pacer_func(character *c, pair_t dest)
+static void move_pacer_func(character_t *c, pair_t dest)
 {
   dest[dim_x] = c->pos[dim_x];
   dest[dim_y] = c->pos[dim_y];
@@ -117,7 +117,7 @@ static void move_pacer_func(character *c, pair_t dest)
   }
 }
 
-static void move_wanderer_func(character *c, pair_t dest)
+static void move_wanderer_func(character_t *c, pair_t dest)
 {
   dest[dim_x] = c->pos[dim_x];
   dest[dim_y] = c->pos[dim_y];
@@ -148,14 +148,14 @@ static void move_wanderer_func(character *c, pair_t dest)
   }
 }
 
-static void move_sentry_func(character *c, pair_t dest)
+static void move_sentry_func(character_t *c, pair_t dest)
 {
   // Not a bug.  Sentries are non-aggro.
   dest[dim_x] = c->pos[dim_x];
   dest[dim_y] = c->pos[dim_y];
 }
 
-static void move_walker_func(character *c, pair_t dest)
+static void move_walker_func(character_t *c, pair_t dest)
 {
   dest[dim_x] = c->pos[dim_x];
   dest[dim_y] = c->pos[dim_y];
@@ -190,13 +190,13 @@ static void move_walker_func(character *c, pair_t dest)
   }
 }
 
-static void move_pc_func(character *c, pair_t dest)
+static void move_pc_func(character_t *c, pair_t dest)
 {
   io_display();
   io_handle_input(dest);
 }
 
-void (*move_func[num_movement_types])(character *, pair_t) = {
+void (*move_func[num_movement_types])(character_t *, pair_t) = {
   move_hiker_func,
   move_rival_func,
   move_pacer_func,
@@ -208,7 +208,7 @@ void (*move_func[num_movement_types])(character *, pair_t) = {
 
 int32_t cmp_char_turns(const void *key, const void *with)
 {
-  return ((character *) key)->next_turn - ((character *) with)->next_turn;
+  return ((character_t *) key)->next_turn - ((character_t *) with)->next_turn;
 }
 
 void delete_character(void *v)
@@ -216,7 +216,7 @@ void delete_character(void *v)
   if (v == &world.pc) {
     free(world.pc.pc);
   } else {
-    free(((character *) v)->npc);
+    free(((character_t *) v)->npc);
     free(v);
   }
 }
@@ -237,7 +237,7 @@ static int32_t rival_cmp(const void *key, const void *with) {
                           [((path_t *) with)->pos[dim_x]]);
 }
 
-void pathfind(map *m)
+void pathfind(map_t *m)
 {
   heap_t h;
   uint32_t x, y;
@@ -274,7 +274,7 @@ void pathfind(map *m)
     }
   }
 
-  while ((c = heap_remove_min(&h))) {
+  while ((c = (path_t*)heap_remove_min(&h))) {
     c->hn = NULL;
     if ((p[c->pos[dim_y] - 1][c->pos[dim_x] - 1].hn) &&
         (world.hiker_dist[c->pos[dim_y] - 1][c->pos[dim_x] - 1] >
@@ -371,7 +371,7 @@ void pathfind(map *m)
     }
   }
 
-  while ((c = heap_remove_min(&h))) {
+  while ((c = (path_t*)heap_remove_min(&h))) {
     c->hn = NULL;
     if ((p[c->pos[dim_y] - 1][c->pos[dim_x] - 1].hn) &&
         (world.rival_dist[c->pos[dim_y] - 1][c->pos[dim_x] - 1] >

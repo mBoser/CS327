@@ -1,0 +1,32 @@
+Main Functions:
+    None, just the new parser.cpp file
+
+Use: 
+    **FOR CPP VERSION OF POKE USE THIS**
+    make
+    ./poke327
+
+    **TO TEST THE PARSING USE THIS**
+    make parser
+    ./parser <filename>
+
+
+For this assignment, I started with professors code from 1.05, and built off that.
+I started by trying to convert to CPP but for whatever reason I was struggling with
+the type casting which ended up being super easy, but since it wouldn't compile
+without this conversion working, I just decided to write the parser it its own file
+with its own main. After I got the parsing working by iterating through each line and
+storing it in its own class variable depening on the file that was selected. I was
+left with not a lot of time to do the conversion and on top of that, merge the
+standalone file with the poke327 file. They both work in their own right, but I know
+that we were supposed to have it work all in one, but I hope that isn't too big
+of a problem :) Anyways for the cpp conversion it was actually really simple to change
+to classes, pretty much replaced static struct with class. The annoying part was
+doing all of the typecasts, but conveniently it pretty much tells you exactly what
+to cast to and it just so happens to be on almost all of the "malloc" calls, so that
+was not too bad once I got rolling. Anyways that is my 1.06 thanks for reading! :D
+
+Known Bugs:
+    Not really any bugs that are known, just that they are separate files
+    and you have to comple them separately with their own args. Hopefully
+    the awesome TA that grades this lets it slide ;)
