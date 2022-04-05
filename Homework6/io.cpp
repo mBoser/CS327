@@ -51,7 +51,7 @@ void io_queue_message(const char *format, ...)
   io_message_t *tmp;
   va_list ap;
 
-  if (!(tmp = malloc(sizeof (*tmp)))) {
+  if (!(tmp = (io_message_t*)malloc(sizeof (*tmp)))) {
     perror("malloc");
     exit(1);
   }
@@ -102,19 +102,19 @@ static void io_print_message_queue(uint32_t y, uint32_t x)
  **************************************************************************/
 static int compare_trainer_distance(const void *v1, const void *v2)
 {
-  const character *const *c1 = v1;
-  const character *const *c2 = v2;
+  const character_t *const *c1 = (const character_t * const*)v1;
+  const character_t *const *c2 = (const character_t * const*)v2;
 
   return (world.rival_dist[(*c1)->pos[dim_y]][(*c1)->pos[dim_x]] -
           world.rival_dist[(*c2)->pos[dim_y]][(*c2)->pos[dim_x]]);
 }
 
-static character *io_nearest_visible_trainer()
+static character_t *io_nearest_visible_trainer()
 {
-  character **c, *n;
+  character_t **c, *n;
   uint32_t x, y, count;
 
-  c = malloc(world.cur_map->num_trainers * sizeof (*c));
+  c = (character_t**)malloc(world.cur_map->num_trainers * sizeof (*c));
 
   /* Get a linear list of trainers */
   for (count = 0, y = 1; y < MAP_Y - 1; y++) {
@@ -139,7 +139,7 @@ static character *io_nearest_visible_trainer()
 void io_display()
 {
   uint32_t y, x;
-  character *c;
+  character_t *c;
 
   clear();
   for (y = 0; y < MAP_Y; y++) {
@@ -273,13 +273,13 @@ static void io_scroll_trainer_list(char (*s)[40], uint32_t count)
   }
 }
 
-static void io_list_trainers_display(character **c,
+static void io_list_trainers_display(character_t **c,
                                      uint32_t count)
 {
   uint32_t i;
   char (*s)[40]; /* pointer to array of 40 char */
 
-  s = malloc(count * sizeof (*s));
+  s = (char (*)[40])malloc(count * sizeof (*s));
 
   mvprintw(3, 19, " %-40s ", "");
   /* Borrow the first element of our array for this string: */
@@ -321,10 +321,10 @@ static void io_list_trainers_display(character **c,
 
 static void io_list_trainers()
 {
-  character **c;
+  character_t **c;
   uint32_t x, y, count;
 
-  c = malloc(world.cur_map->num_trainers * sizeof (*c));
+  c = (character_t**)malloc(world.cur_map->num_trainers * sizeof (*c));
 
   /* Get a linear list of trainers */
   for (count = 0, y = 1; y < MAP_Y - 1; y++) {
@@ -361,9 +361,9 @@ void io_pokemon_center()
   getch();
 }
 
-void io_battle(character *aggressor, character *defender)
+void io_battle(character_t *aggressor, character_t *defender)
 {
-  character *npc;
+  character_t *npc;
 
   io_display();
   mvprintw(0, 0, "Aww, how'd you get so strong?  You and your pokemon must share a special bond!");
