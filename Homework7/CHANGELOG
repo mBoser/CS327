@@ -1,0 +1,105 @@
+2/9/22
+Imported Prof's code from 1.01
+Edited some map generation functions to allow me to control where the exits go
+Created world structure
+Added loop to scan user input
+Created functionality to teleport and move around
+Added edge detection to seal off exits
+Added probability that the pokemarts and pokecenters would spawn
+
+Homework 1.03
+
+2/23/22
+Took code from 1.02
+Shelled out main to only print one map
+Created dijkstras for hiker
+Debugged hiker problems
+Added print function for hiker map
+Created dijkstras for rivals
+Debugged rival dijkstras
+Still have one problem that exists in about 15% of runs
+Added print functionality for the rivals
+Added computation for both hiker and rival in main
+Printed all three maps in main
+
+Homework 1.04
+
+2/28/22
+Took professors code from 1.03
+Gutted the movement stuff between maps
+Added the infrastructure for the items
+Trainer struct
+Trainer map in global world
+Added Some helper functions that moved characters a bit
+Clunky movement, no deletion of previous char
+Lots of bugs to work out but kinda moves?
+
+3/9/22
+Cleaned up functions for logical next
+Debuged a LOT finding out how to stop a trail of chars
+Changed the structure, added the cost variable
+Changed the structure, added a direction and a type var
+Added a variable whether or not to display it
+Lots of debugging...
+Changed logic for when char hits wall
+Now it has error detection for all sides when moving
+Still bug where if character moves away and comes back to
+original spot, it gets eaten and is stuck.
+I can't debug it, im lost, very sad.
+
+Homework 1.05
+
+3/23/22
+Took professors code from 1.04
+Added ncurses
+changed the print map to now use ncurses
+Added simple input handling
+Created fxn prototypes for displaying things
+Added super basic movement, dosen't relly work
+
+3/24/22
+Added pc movement
+Now distance maps are updated on movement
+Added collision detection for marts and centers
+Now the user can "enter" battles, marts, and centers
+After battle the enemy is erased
+Added menu of trainers
+Cannot move between map-to-map
+Only "bug" from what I can tell is you
+cannot move from map to map
+
+Homework 1.06
+
+3/30/22
+Took code from 1.05
+Made a new file because conversion
+was making me mad
+Implemented basic parsing for one file
+Repeated for all filetypes
+Decided to leave as separate files
+
+3/31/22
+Error checked parser file, works good for all types of files
+Started conversion to CPP
+Got conversion finished but a little bit too late
+because I have work in 10 minutes.
+Decided to leave as separate file, hopefully that is ok :)
+
+Homework 1.07
+
+4/5/22
+Took code from 1.05
+Generated pokemon
+spawn rate
+level based on manhattan dist
+Shiny status
+Gender
+IVs
+
+2/6/22
+Parsed stat csv
+Found possible movset
+Generated random moves
+Grabbed base stats from parsed file
+Added IV values
+Added UI elements to print out the stuffs

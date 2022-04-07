@@ -30,6 +30,8 @@ char *types[19];
 move_db moves[845];
 pokemon_species_db species[899];
 experience_db experience[601];
+stat_db stats[9];
+pokemon_stat_db pokemon_stats[6553];
 
 void db_parse(bool print)
 {
@@ -314,6 +316,11 @@ void db_parse(bool print)
     }
   }
 
+
+
+
+
+
   prefix = (char *) realloc(prefix, prefix_len + strlen("type_names.csv") + 1);
   strcpy(prefix + prefix_len, "type_names.csv");
   
@@ -349,6 +356,75 @@ void db_parse(bool print)
   if (print) {
     for (i = 1; i <= 18; i++) {
       printf("%s\n", types[i]);
+    }
+  }
+
+  prefix = (char *) realloc(prefix, prefix_len + strlen("pokemon_stats.csv") + 1);
+  strcpy(prefix + prefix_len, "pokemon_stats.csv");
+  
+  f = fopen(prefix, "r");
+
+  //No null byte copied here, so prefix is not technically a string anymore.
+  prefix = (char *) realloc(prefix, prefix_len + 1);
+
+  fgets(line, 800, f);
+  
+  for (i = 1; i <= 6552; i++) {
+    fgets(line, 800, f);
+    pokemon_stats[i].pokemon_id = atoi((tmp = next_token(line, ',')));
+    tmp = next_token(NULL, ',');
+    pokemon_stats[i].stat_id = *tmp ? atoi(tmp) : -1;
+    tmp = next_token(NULL, ',');
+    pokemon_stats[i].base_stat = *tmp ? atoi(tmp) : -1;
+    tmp = next_token(NULL, ',');
+    pokemon_stats[i].effort = *tmp ? atoi(tmp) : -1;
+  }
+
+  fclose(f);
+
+  if (print) {
+    for (i = 0; i <= 6552; i++) {
+      printf("%d %d %d %d\n",
+             pokemon_stats[i].pokemon_id,
+             pokemon_stats[i].stat_id,
+             pokemon_stats[i].base_stat,
+             pokemon_stats[i].effort);
+    }
+  }
+
+    prefix = (char *) realloc(prefix, prefix_len + strlen("stats.csv") + 1);
+  strcpy(prefix + prefix_len, "stats.csv");
+  
+  f = fopen(prefix, "r");
+
+  //No null byte copied here, so prefix is not technically a string anymore.
+  prefix = (char *) realloc(prefix, prefix_len + 1);
+
+  fgets(line, 800, f);
+  
+  for (i = 1; i <= 8; i++) {
+    fgets(line, 800, f);
+    stats[i].id = atoi((tmp = next_token(line, ',')));
+    tmp = next_token(NULL, ',');
+    stats[i].damage_class_id = *tmp ? atoi(tmp) : -1;
+    tmp = next_token(NULL, ',');
+    strcpy(stats[i].identifier, (tmp = next_token(NULL, ',')));
+    tmp = next_token(NULL, ',');
+    stats[i].is_battle_only = *tmp ? atoi(tmp) : -1;
+    tmp = next_token(NULL, ',');
+    stats[i].game_index = *tmp ? atoi(tmp) : -1;
+  }
+
+  fclose(f);
+
+  if (print) {
+    for (i = 0; i <= 8; i++) {
+      printf("%d %d %s %d %d\n",
+             stats[i].id,
+             stats[i].damage_class_id,
+             stats[i].identifier,
+             stats[i].is_battle_only,
+             stats[i].game_index);
     }
   }
 

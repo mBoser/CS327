@@ -1,0 +1,31 @@
+Main Functions:
+    poke_check()
+    get_moves()
+
+Use: 
+    make
+    ./poke327
+
+
+For this assignment, I started with professors code from 1.06, and built off that.
+I started by getting general spawn mechanics before I worried about getting the 
+specifics of each pokemon to have all the detail in it. To decide weather it spawns
+a pokemon or not, I just put a check in game_loop() that every time that the PC 
+moves into a grass biome, it has a 10 percent chance to spawn a pokemon. After it
+is spawned, I generated things like the pokemon ID, gender, shiny status, and level
+all randomly. After I assign the level depending on how far away the PC is, I generate
+the IV values for each of the stats. Now that I had all the things generated, I had to
+go and actually parse the stats file to get the base stats. To do this, all I did was
+iterate through the stat array until the ID matched the pokemon ID, im sure that I could
+have done some division to find the starting index, but I didn't want to spend too much
+time on it. Now that the stats were parsed and I had the base stats, and all the info
+for the pokemon, all I had to do was get the moveset and display it. Getting the moveset
+was pretty easy assuming I did it correctly. I followed the PDF to a T and it seems
+to be working all right. It just gets a vector of possible move ids and returns it,
+from which I get 2 random ones. Printing out the data was simple, and that was pretty
+much the whole assignment! Thank you for reading!
+
+Known Bugs:
+    Not really any bugs that are known, I am 99% sure
+    that I did the pokemon moveset correctly, but I guess
+    I could be wrong, the PDF was a little ambigious.

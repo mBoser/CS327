@@ -10,6 +10,16 @@ struct pokemon_db {
   int base_experience;
   int order;
   int is_default;
+  int level;
+  bool shiny;
+  int gender;
+
+  int hp;
+  int attack;
+  int defense;
+  int sp_atk;
+  int sp_def;
+  int speed;
 };
 
 struct move_db {
@@ -68,12 +78,29 @@ struct experience_db {
   int experience;
 };
 
+struct stat_db {
+  int id;
+  int damage_class_id;
+  char identifier[30];
+  int is_battle_only;
+  int game_index;
+};
+
+struct pokemon_stat_db{
+  int pokemon_id;
+  int stat_id;
+  int base_stat;
+  int effort;
+};
+
 extern pokemon_move_db pokemon_moves[528239];
 extern pokemon_db pokemon[1093];
 extern char *types[19];
 extern move_db moves[845];
 extern pokemon_species_db species[899];
 extern experience_db experience[601];
+extern stat_db stats[9];
+extern pokemon_stat_db pokemon_stats[6553];
 
 void db_parse(bool print);
 

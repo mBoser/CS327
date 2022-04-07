@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <unistd.h>
 #include <ncurses.h>
+#include <string>
+#include <vector>
 
 #include "heap.h"
 #include "poke327.h"
@@ -1059,14 +1061,29 @@ void leave_map(pair_t d)
   new_map(0);
 }
 
+std::vector<int> get_moves(int species_id){
+  int i;
+  std::vector<int> moveset;
+  
+  for(i = 0; i<528239; i++){
+    pokemon_move_db m = pokemon_moves[i];
+    if((m.version_group_id = 19) && (m.pokemon_id == species_id) && (m.pokemon_move_method_id == 1)){
+      moveset.push_back(m.move_id);
+    }
+  }
+  return moveset;
+
+}
+
 void poke_check(){
   int r = rand_range(1,10);
   int dist = (abs(world.cur_idx[dim_x] - (WORLD_SIZE/2)) + abs(world.cur_idx[dim_y] - (WORLD_SIZE/2)));
   int min_lvl = 0;
   int max_lvl = 1;
   bool is_shiny = false;
-  int spawned_id = rand_range(0, 1092);
+  int spawned_id = rand_range(1, 1092);
 
+  pokemon_db p = pokemon[spawned_id];
   if(r == 1){ //Pokemon spawned!
     if(dist <= 200){
       min_lvl = 1;
@@ -1082,9 +1099,74 @@ void poke_check(){
     if(rand() % 8192 == 0){
       is_shiny = true;
     }
+    p.gender = gender;
+    p.level = level;
+    p.shiny = is_shiny;
+
+    std::vector<int> possible_moves = get_moves(p.species_id);
+
+    int num_moves = possible_moves.size();
+    int move_1 = -1;
+    int move_2 = -1;
+    if(num_moves == 1){
+      move_1 = possible_moves[0];
+    } else if(num_moves > 1){
+      move_1 = possible_moves[rand_range(0, num_moves)];
+      do{
+        move_2 = possible_moves[rand_range(0, num_moves)];
+      } while(move_1 == move_2);
+    }
+
+    int hp_iv = rand_range(0,15);
+    int attack_iv = rand_range(0,15);
+    int defense_iv = rand_range(0,15);
+    int sp_atk_iv = rand_range(0,15);
+    int sp_def_iv = rand_range(0,15);
+    int speed_iv = rand_range(0,15);
+
+    int starting_index = 0;
+    while(pokemon_stats[starting_index].pokemon_id != p.id){
+      starting_index++;
+    }
+    p.hp = pokemon_stats[starting_index].base_stat + hp_iv;
+    p.attack = pokemon_stats[starting_index+1].base_stat + attack_iv;
+    p.defense = pokemon_stats[starting_index+2].base_stat + defense_iv;
+    p.sp_atk = pokemon_stats[starting_index+3].base_stat + sp_atk_iv;
+    p.sp_def = pokemon_stats[starting_index+4].base_stat + sp_def_iv;
+    p.speed = pokemon_stats[starting_index+5].base_stat + speed_iv;
+
+
     clear();
     refresh();
-    mvprintw(0, 0, "Pokemon Has spawned with lvl: %d gender: %d ID: %d", level, gender, spawned_id);
+    mvprintw(0, 0, "A wild %s Appeared! (ID %d)", p.identifier, p.id);
+    mvprintw(1 ,0, "Level: %d", level);
+    if(gender == 0){
+      mvprintw(2 ,0, "Gender: Male");
+    } else{
+      mvprintw(2 ,0, "Gender: Female");
+    }
+    
+    if(move_1 != -1)
+      mvprintw(3 ,0, "Move 1: %s", moves[move_1].identifier);
+    if(move_2 != -1)
+      mvprintw(4 ,0, "Move 2: %s", moves[move_2].identifier);
+
+    mvprintw(6 ,0, "Stats:");
+    mvprintw(7 ,0, "HP: %d", p.hp);
+    mvprintw(8 ,0, "Attack: %d", p.attack);
+    mvprintw(9 ,0, "Defense: %d", p.defense);
+    mvprintw(10 ,0, "Special Attack: %d", p.sp_atk);
+    mvprintw(11 ,0, "Special Defense: %d", p.sp_def);
+    mvprintw(12 ,0, "Speed: %d", p.speed);
+
+    if(is_shiny){
+      mvprintw(13 ,0, "Shiny: YES!");
+    } else{
+      mvprintw(13 ,0, "Shiny: No :(");
+    }
+
+    mvprintw(20 ,0, "Press Any Key To Exit");
+    
     refresh();
     getch();
     io_display();
@@ -1144,7 +1226,7 @@ int main(int argc, char *argv[])
   //char c;
   //int x, y;
 
-  //db_parse(true);
+  db_parse(false);
 
   //return 0;
 
