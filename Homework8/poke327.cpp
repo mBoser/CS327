@@ -807,6 +807,10 @@ void init_pc()
   world.cur_map->cmap[y][x] = &world.pc;
   world.pc.next_turn = 0;
 
+  world.pc.bag[revive] = 5;
+  world.pc.bag[potion] = 10;
+  world.pc.bag[pokeball] = 10;
+
   heap_insert(&world.cur_map->turn, &world.pc);
 }
 
@@ -1073,12 +1077,11 @@ void get_starter(){
   c = new Pokemon(1);
 
   clear();
-  refresh();
   mvprintw(0, 0, "Please Select Your Starter!");
   mvprintw(3, 0, "1) %s", a->get_species());
   mvprintw(4, 0, "2) %s", b->get_species());
   mvprintw(5, 0, "3) %s", c->get_species());
-
+  refresh();
   bool valid = false;
   char input;
   while(!valid){

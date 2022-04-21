@@ -30,6 +30,12 @@ typedef enum dim {
   num_dims
 } dim_t;
 
+typedef enum item {
+  revive,
+  potion,
+  pokeball
+} item_t;
+
 typedef int16_t pair_t[num_dims];
 
 #define MAP_X              80
@@ -101,6 +107,7 @@ class Character {
   char symbol;
   int next_turn;
   Pokemon *pokemon[6];
+  int bag[3];
 
   virtual ~Character() {}
 };

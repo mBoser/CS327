@@ -87,6 +87,12 @@ struct pokemon_stats_db {
   int effort;
 };
 
+struct pokemon_types_db {
+  int pokemon_id;
+  int type_id;
+  int slot;
+};
+
 extern pokemon_move_db pokemon_moves[528239];
 extern pokemon_db pokemon[1093];
 extern char *types[19];
@@ -94,6 +100,8 @@ extern move_db moves[845];
 extern pokemon_species_db species[899];
 extern experience_db experience[601];
 extern pokemon_stats_db pokemon_stats[6553];
+extern pokemon_types_db pokemon_types[1676];
+
 
 void db_parse(bool print);
 

@@ -3,11 +3,13 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <math.h>
 
 #include "io.h"
 #include "character.h"
 #include "poke327.h"
 #include "pokemon.h"
+#include "db_parse.h"
 
 typedef struct io_message {
   /* Will print " --more-- " at end of line when another message follows. *
@@ -362,23 +364,7 @@ void io_pokemon_center()
   getch();
 }
 
-void io_battle(Character *aggressor, Character *defender)
-{
-  Npc *npc;
 
-  io_display();
-  mvprintw(0, 0, "Aww, how'd you get so strong?  You and your pokemon must share a special bond!");
-  refresh();
-  getch();
-  if (!(npc = dynamic_cast<Npc *>(aggressor))) {
-    npc = dynamic_cast<Npc *>(defender);
-  }
-  
-  npc->defeated = 1;
-  if (npc->ctype == char_hiker || npc->ctype == char_rival) {
-    npc->mtype = move_wander;
-  }
-}
 
 uint32_t move_pc_dir(uint32_t input, pair_t dest)
 {
@@ -443,7 +429,7 @@ uint32_t move_pc_dir(uint32_t input, pair_t dest)
       return 1;
     } else if (dynamic_cast<Npc *>
                (world.cur_map->cmap[dest[dim_y]][dest[dim_x]])) {
-      io_battle(&world.pc, world.cur_map->cmap[dest[dim_y]][dest[dim_x]]);
+      io_battle(world.cur_map->cmap[dest[dim_y]][dest[dim_x]]);
       // Not actually moving, so set dest back to PC position
       dest[dim_x] = world.pc.pos[dim_x];
       dest[dim_y] = world.pc.pos[dim_y];
@@ -499,8 +485,862 @@ void io_teleport_world(pair_t dest)
   io_teleport_pc(dest);
 }
 
+bool attempt_run(int t_speed, int w_speed, int attempts){
+  int odds;
+  odds = (((t_speed * 32) / ((w_speed/4) % 256)) + 30*attempts);
+  int prob = rand() % 256;
+
+  if(prob < odds){
+    return true;
+  } else{
+    return false;
+  }
+}
+
+bool is_alive(int index){
+  if(world.pc.pokemon[index]){
+    if(world.pc.pokemon[index]->cur_hp > 0){
+      return true;
+    } else{
+      return false;
+    }
+  }
+
+  return false;
+}
+
+void io_list_pokemon(){
+  clear();
+  mvprintw(0,0,"Pokemon:");
+
+  int i;
+  for(i = 0; i<6; i++){
+    if(world.pc.pokemon[i]){
+      if(is_alive(i)){
+        mvprintw(i+3,0,"%d) %s: HP: %d",i+1, world.pc.pokemon[i]->get_species(), world.pc.pokemon[i]->cur_hp);
+      }else{
+        mvprintw(i+3,0,"%d) %s: Knocked Out!",i+1, world.pc.pokemon[i]->get_species());
+      }
+    }else{
+      break;
+    }
+  }
+}
+
+int io_switch_pokemon_forced(){
+  clear();
+  io_list_pokemon();
+  mvprintw(1,0, "Select which pokemon to switch to");
+  refresh();
+  bool deciding = true;
+  char c;
+  while(deciding){
+    c = getch();
+    switch(c){
+      case '1':
+        if(world.pc.pokemon[0]){
+          if(world.pc.pokemon[0]->cur_hp < 1){
+            mvprintw(19,0,"Cannot Switch to a knocked out pokemon");
+          }else{
+            deciding = false;
+            return 0;
+          }
+        } else{
+          mvprintw(20,0,"Please select a valid pokemon");
+        }
+        break;
+      case '2':
+        if(world.pc.pokemon[1]){
+          if(world.pc.pokemon[1]->cur_hp < 1){
+            mvprintw(19,0,"Cannot Switch to a knocked out pokemon");
+          }else{
+            deciding = false;
+            return 1;
+          }
+        } else{
+          mvprintw(20,0,"Please select a valid pokemon");
+        }
+        break;
+      case '3':
+        if(world.pc.pokemon[2]){
+          if(world.pc.pokemon[2]->cur_hp < 1){
+            mvprintw(19,0,"Cannot Switch to a knocked out pokemon");
+          }else{
+            deciding = false;
+            return 2;
+          }
+        } else{
+          mvprintw(20,0,"Please select a valid pokemon");
+        }
+        break;
+      case '4':
+        if(world.pc.pokemon[3]){
+          if(world.pc.pokemon[3]->cur_hp < 1){
+            mvprintw(19,0,"Cannot Switch to a knocked out pokemon");
+          }else{
+            deciding = false;
+            return 3;
+          }
+        } else{
+          mvprintw(20,0,"Please select a valid pokemon");
+        }
+        break;
+      case '5':
+        if(world.pc.pokemon[4]){
+          if(world.pc.pokemon[4]->cur_hp < 1){
+            mvprintw(19,0,"Cannot Switch to a knocked out pokemon");
+          }else{
+            deciding = false;
+            return 4;
+          }
+        } else{
+          mvprintw(20,0,"Please select a valid pokemon");
+        }
+        break;
+      case '6':
+        if(world.pc.pokemon[5]){
+          if(world.pc.pokemon[5]->cur_hp < 1){
+            mvprintw(19,0,"Cannot Switch to a knocked out pokemon");
+          }else{
+            deciding = false;
+            return 5;
+          }
+        } else{
+          mvprintw(20,0,"Please select a valid pokemon");
+        }
+        break;
+    }
+  }
+  return 0;
+}
+
+int io_switch_pokemon(int cur_index){
+  clear();
+  io_list_pokemon();
+  mvprintw(1,0, "Select which pokemon to switch to");
+  mvprintw(15,0, "Current pokemon: %s", world.pc.pokemon[cur_index]->get_species());
+  mvprintw(16,0, "Level: %d    HP: %d/%d", world.pc.pokemon[cur_index]->get_level(), world.pc.pokemon[cur_index]->cur_hp, world.pc.pokemon[cur_index]->get_hp());
+  mvprintw(21,0, "ESC to go back");
+  refresh();
+  bool deciding = true;
+  char c;
+  while(deciding){
+    c = getch();
+    switch(c){
+      case '1':
+        if(world.pc.pokemon[0] && cur_index != 0){
+          if(world.pc.pokemon[0]->cur_hp < 1){
+            mvprintw(19,0,"Cannot Switch to a knocked out pokemon");
+          }else{
+            deciding = false;
+            return 0;
+          }
+        } else{
+          mvprintw(20,0,"Please select a valid pokemon");
+        }
+        break;
+      case '2':
+        if(world.pc.pokemon[1] && cur_index != 1){
+          if(world.pc.pokemon[1]->cur_hp < 1){
+            mvprintw(19,0,"Cannot Switch to a knocked out pokemon");
+          }else{
+            deciding = false;
+            return 1;
+          }
+        } else{
+          mvprintw(20,0,"Please select a valid pokemon");
+        }
+        break;
+      case '3':
+        if(world.pc.pokemon[2] && cur_index != 2){
+          if(world.pc.pokemon[2]->cur_hp < 1){
+            mvprintw(19,0,"Cannot Switch to a knocked out pokemon");
+          }else{
+            deciding = false;
+            return 2;
+          }
+        } else{
+          mvprintw(20,0,"Please select a valid pokemon");
+        }
+        break;
+      case '4':
+        if(world.pc.pokemon[3] && cur_index != 3){
+          if(world.pc.pokemon[3]->cur_hp < 1){
+            mvprintw(19,0,"Cannot Switch to a knocked out pokemon");
+          }else{
+            deciding = false;
+            return 3;
+          }
+        } else{
+          mvprintw(20,0,"Please select a valid pokemon");
+        }
+        break;
+      case '5':
+        if(world.pc.pokemon[4] && cur_index != 4){
+          if(world.pc.pokemon[4]->cur_hp < 1){
+            mvprintw(19,0,"Cannot Switch to a knocked out pokemon");
+          }else{
+            deciding = false;
+            return 4;
+          }
+        } else{
+          mvprintw(20,0,"Please select a valid pokemon");
+        }
+        break;
+      case '6':
+        if(world.pc.pokemon[5] && cur_index != 5){
+          if(world.pc.pokemon[5]->cur_hp < 1){
+            mvprintw(19,0,"Cannot Switch to a knocked out pokemon");
+          }else{
+            deciding = false;
+            return 5;
+          }
+        } else{
+          mvprintw(20,0,"Please select a valid pokemon");
+        }
+        break;
+      case 27:
+        deciding = false;
+        return -1;
+        break;
+    }
+  }
+  return 0;
+}
+
+int get_move_damage(double level, double power, double attack, double defense, double speed, double stab){
+  double crit = 1;
+  if(rand_range(0,255) < (speed/2)){
+    crit = 1.5;
+  }
+  double random = rand_range(85,100) / 100.0;
+
+  // mvprintw(15,70,"LVL: %3.3f",level);
+  // mvprintw(16,70,"POW: %3.3f",power);
+  // mvprintw(17,70,"ATK: %3.3f",attack);
+  // mvprintw(18,70,"DEF: %3.3f",defense);
+  // mvprintw(19,70,"SPD: %3.3f",speed);
+  // mvprintw(20,70,"RNG: %d",random);
+  // mvprintw(21,70,"CRT: %3.3f",crit);
+  //refresh();
+  return floor(((((((2.0*level)/5.0 +2.0) * power * (attack/defense)) / 50.0) + 2.0) * crit * random * stab * 1.0));
+}
+
+int do_move(int p_move, Pokemon *pc_poke, Pokemon *enemy){
+  clear();
+  mvprintw(0,0, "%s", pc_poke->get_species());
+  mvprintw(1,0, "Level: %d    HP: %d/%d", pc_poke->get_level(), pc_poke->cur_hp, pc_poke->get_hp());
+  mvprintw(0,40, "%s", enemy->get_species());
+  mvprintw(1,40, "Level: %d    HP: %d/%d", enemy->get_level(), enemy->cur_hp, enemy->get_hp());
+  mvprintw(21,0, "Press any Key to continue...");
+  refresh();
+  int i;
+  int enemy_move_count = 0;
+  for(i = 0; i<4; i++){
+    if(enemy->get_move(i)[0] != '\0') {
+      enemy_move_count++;
+    }
+  }
+  int rand_move = rand_range(0, enemy_move_count-1);
+  int enemy_move = enemy->get_move_id(rand_move);
+  bool pc_first = false;
+
+  bool pc_miss = true; //Default true for "missing" a non-attack move
+  bool enemy_miss = true;
+
+  if(p_move > 0){ //PLAYER DOES AN ACTUAL ATTACK
+    int pc_pri = moves[p_move].priority;
+    int enemy_pri = moves[enemy_move].priority;
+
+    if(pc_pri == enemy_pri){
+      int pc_speed = pc_poke->get_speed();
+      int enemy_speed = enemy->get_speed();
+      if(pc_speed == enemy_speed){
+        if(rand()%2){
+          pc_first = true;
+        } else{
+          pc_first = false;
+        }
+      } else if(pc_speed > enemy_speed){
+        pc_first = true;
+      } else{
+        pc_first = false;
+      }
+    } else if(pc_pri > enemy_pri){
+      pc_first = true;
+    } else{
+      pc_first = false;
+    }
+    if(rand() % 100 < moves[p_move].accuracy || moves[p_move].accuracy == -1){ //I WASNT SURE WHAT TO DO ABOUT NON ASSIGNED VALUES SO I JUST ASSUMED A HIT
+      pc_miss = false;
+    }
+
+  }
+  
+  if(rand() % 100 < moves[enemy_move].accuracy || moves[enemy_move].accuracy == -1){
+    enemy_miss = false;
+  }
+
+  if(pc_first){
+    if(p_move != 0){
+      mvprintw(2,0, "%s, USE %s", pc_poke->get_species(), moves[p_move].identifier);
+      refresh();
+      getch();
+    }
+
+    if(!pc_miss){
+      int type = (pokemon_types[pc_poke->get_species_id()].type_id);
+      double stab = 1.0;
+      if (moves[p_move].type_id == type){
+        stab = 1.5;
+      } else{
+        stab = 1.0;
+      }
+      int damage = get_move_damage(pc_poke->get_level() * 1.0, moves[p_move].power * 1.0, pc_poke->get_atk() * 1.0, enemy->get_def() * 1.0, pc_poke->get_speed() * 1.0, stab); //TODO PARSE IN STAB
+      mvprintw(10,0, "%s Hit for %d!", moves[p_move].identifier, damage);
+      refresh();
+      getch();
+
+      enemy->cur_hp -= damage;
+      if(enemy->cur_hp <= 0){
+        enemy->cur_hp = 0;
+        mvprintw(11,40, "%s Was knocked out!", enemy->get_species());
+        refresh();
+        getch();
+        return 1;
+      }
+    } else{
+      if(p_move != 0){
+        mvprintw(10,0, "%s Missed!", moves[p_move].identifier);
+        refresh();
+        getch();
+      }
+      
+    }
+    
+    mvprintw(2,40, "%s, USES %s", enemy->get_species(), moves[enemy_move].identifier);
+    refresh();
+    getch();
+
+    if(!enemy_miss){
+      int damage_incoming = get_move_damage(enemy->get_level() * 1.0, moves[enemy_move].power * 1.0, enemy->get_atk() * 1.0, pc_poke->get_def() * 1.0, enemy->get_speed() * 1.0, 1.0); //TODO PARSE IN STAB
+      mvprintw(10,40, "%s Hit for %d!", moves[enemy_move].identifier, damage_incoming);
+      refresh();
+      getch();
+
+      pc_poke->cur_hp -= damage_incoming;
+      if(pc_poke->cur_hp <= 0){
+        pc_poke->cur_hp = 0;
+        mvprintw(11,0, "%s Was knocked out!", pc_poke->get_species());
+        refresh();
+        getch();
+        return 2;
+      }
+
+    } else{
+      mvprintw(10,40, "%s Missed!", moves[enemy_move].identifier);
+      refresh();
+      getch();
+    }
+
+  } else{ //ENEMY FIRST
+    mvprintw(2,40, "%s, USES %s", enemy->get_species(), moves[enemy_move].identifier);
+    refresh();
+    getch();
+
+    if(!enemy_miss){
+      int damage_incoming = get_move_damage(enemy->get_level() * 1.0, moves[enemy_move].power * 1.0, enemy->get_atk() * 1.0, pc_poke->get_def() * 1.0, enemy->get_speed() * 1.0, 1.0); //TODO PARSE IN STAB
+      mvprintw(10,40, "%s Hit for %d!", moves[enemy_move].identifier, damage_incoming);
+      refresh();
+      getch();
+
+      pc_poke->cur_hp -= damage_incoming;
+      if(pc_poke->cur_hp <= 0){
+        pc_poke->cur_hp = 0;
+        mvprintw(11,0, "%s Was knocked out!", pc_poke->get_species());
+        refresh();
+        getch();
+        return 2;
+      }
+
+    } else{
+      mvprintw(10,40, "%s Missed!", moves[enemy_move].identifier);
+      refresh();
+      getch();
+    }
+
+    if(p_move != 0){
+      mvprintw(2,0, "%s, USE %s", pc_poke->get_species(), moves[p_move].identifier);
+      refresh();
+      getch();
+    }
+
+    if(!pc_miss){
+      int damage = get_move_damage(pc_poke->get_level() * 1.0, moves[p_move].power * 1.0, pc_poke->get_atk() * 1.0, enemy->get_def() * 1.0, pc_poke->get_speed() * 1.0, 1.0); //TODO PARSE IN STAB
+      mvprintw(10,0, "%s Hit for %d!", moves[p_move].identifier, damage);
+      refresh();
+      getch();
+
+      enemy->cur_hp -= damage;
+      if(enemy->cur_hp <= 0){
+        enemy->cur_hp = 0;
+        mvprintw(11,40, "%s Was knocked out!", enemy->get_species());
+        refresh();
+        getch();
+        return 1;
+      }
+    } else{
+      if(p_move != 0){
+        mvprintw(10,0, "%s Missed!", moves[p_move].identifier);
+        refresh();
+        getch();
+      }
+    }
+  }
+
+  return 0;
+}
+
+void attempt_capture(Pokemon *p){
+  int i;
+  for(i = 0; i<6; i++){
+    if(!world.pc.pokemon[i]){
+      break;
+    }
+  }
+  if(i < 6){
+    world.pc.pokemon[i] = p;
+  }
+}
+
+int io_post_knockout_logic(){
+  clear();
+  int i;
+  for(i = 0; i<6; i++){
+    if(is_alive(i)){
+      break;
+    }
+  }
+  if(i == 6){
+    mvprintw(0,0,"Your Last Pokemon has been knocked out :( you can revive them from your bag!, better luck next time");
+    mvprintw(21,0, "Press any Key to continue...");
+    refresh();
+    getch();
+    return -1; //NO AVAILABLE POKEMON TO USE, EXIT AND CONTINUE AS NORMAL
+  } else{
+    mvprintw(0,0,"Your Pokemon has been knocked out, Please pick a new one!");
+    mvprintw(21,0, "Press any Key to continue...");
+    refresh();
+    getch();
+    return io_switch_pokemon_forced();
+  }
+
+}
+
+int io_fight(Pokemon* pc_poke, Pokemon *enemy, bool wild){
+  char c;
+  clear();
+  mvprintw(0,0,"Choose your move!");
+  mvprintw(15,0, "Current Pokemon: %s", pc_poke->get_species());
+  mvprintw(16,0, "Level: %d    HP: %d/%d", pc_poke->get_level(), pc_poke->cur_hp, pc_poke->get_hp());
+  mvprintw(15,40, "Current Opponent: %s", enemy->get_species());
+  mvprintw(16,40, "Level: %d    HP: %d/%d", enemy->get_level(), enemy->cur_hp, enemy->get_hp());
+  mvprintw(21,0, "ESC to go back");
+  bool deciding = true;
+  
+  int i;
+  int move_count = 0;
+
+  for(i = 0; i<4; i++){
+    if(pc_poke->get_move(i)[0] != '\0') {
+      move_count++;
+      mvprintw((i+1)*2,0, "%d) %s", i+1, pc_poke->get_move(i));
+    }
+  }
+  int move_result = 0;
+  refresh();
+  while(deciding){
+    refresh();
+    c = getch();
+
+    switch(c){
+      case '1':
+        move_result = do_move(pc_poke->get_move_id(0),pc_poke, enemy);
+        if(move_result == 1 && wild){
+          attempt_capture(enemy);
+          clear();
+          mvprintw(0,0,"%s Will be added to your bag if there is space!", enemy->get_species());
+          mvprintw(21,0, "Press any Key to continue...");
+          refresh();
+          getch();
+          return 100;
+        } else if(move_result == 1){
+            return 100;
+        } else if(move_result == 2){
+          int ko_res = 0;
+          ko_res = io_post_knockout_logic();
+          if(ko_res == -1){
+            return 99;
+          } else{
+            return ko_res;
+          }
+        }
+        deciding = false;
+        return -1;
+        break;
+      case '2':
+        if(move_count > 1){
+          move_result = do_move(pc_poke->get_move_id(1),pc_poke, enemy);
+          if(move_result == 1 && wild){
+            attempt_capture(enemy);
+            clear();
+            mvprintw(0,0,"%s Will be added to your bag if there is space!", enemy->get_species());
+            mvprintw(21,0, "Press any Key to continue...");
+            refresh();
+            getch();
+            return 100;
+          }  else if(move_result == 1){
+            return 100;
+          } else if(move_result == 2){
+            int ko_res = 0;
+            ko_res = io_post_knockout_logic();
+            if(ko_res == -1){
+              return 99;
+            } else{
+              return ko_res;
+            }
+          }
+          deciding = false;
+          return -1;
+        } else{
+          mvprintw(20,0, "Please choose a valid move");
+        }
+        break;
+      case '3':
+        if(move_count > 2){
+          move_result = do_move(pc_poke->get_move_id(2),pc_poke, enemy);
+          if(move_result == 1 && wild){
+            attempt_capture(enemy);
+            clear();
+            mvprintw(0,0,"%s Will be added to your bag if there is space!", enemy->get_species());
+            mvprintw(21,0, "Press any Key to continue...");
+            refresh();
+            getch();
+            return 100;
+          } else if(move_result == 1){
+            return 100;
+          } else if(move_result == 2){
+            int ko_res = 0;
+            ko_res = io_post_knockout_logic();
+            if(ko_res == -1){
+              return 99;
+            } else{
+              return ko_res;
+            }
+          }
+          deciding = false;
+          return -1;
+        } else{
+          mvprintw(20,0, "Please choose a valid move");
+        }
+        break;
+      case '4':
+        if(move_count > 3){
+          move_result = do_move(pc_poke->get_move_id(3),pc_poke, enemy);
+          if(move_result == 1 && wild){
+            attempt_capture(enemy);
+            clear();
+            mvprintw(0,0,"%s Will be added to your bag if there is space!", enemy->get_species());
+            mvprintw(21,0, "Press any Key to continue...");
+            refresh();
+            getch();
+            return 100;
+          } else if(move_result == 1){
+              return 100;
+          } else if(move_result == 2){
+            int ko_res = 0;
+            ko_res = io_post_knockout_logic();
+            if(ko_res == -1){
+              return 99;
+            } else{
+              return ko_res;
+            }
+          }
+          deciding = false;
+          return -1;
+        } else{
+          mvprintw(20,0, "Please choose a valid move");
+        }
+        break;
+      case 27:
+        deciding = false;
+        return -1;
+        break;
+      default:
+        mvprintw(20,0, "Please choose a valid move");
+        break;
+    }
+  }
+  
+  return 0;
+}
+
+int io_enter_bag(bool in_wild_battle){
+  clear();
+
+  bool in_bag = true;
+  char c;
+  while(in_bag){
+    mvprintw(0,0,"Welcome to your Bag!");
+    mvprintw(1,0,"Please select which item you would like to use");
+
+    mvprintw(3,0,"1) Revives: %d", world.pc.bag[revive]);
+    mvprintw(4,0,"2) Potions: %d", world.pc.bag[potion]);
+    mvprintw(5,0,"3) Pokeballs: %d (Capture if in battle)", world.pc.bag[pokeball]);
+    mvprintw(21,0, "ESC to leave bag");
+    refresh();
+
+    c = getch();
+    if(c == '1' && world.pc.bag[revive] > 0){
+      clear();
+      io_list_pokemon();
+      mvprintw(1,0,"Please select which pokemon you would like to revive");
+      mvprintw(21,0, "ESC to go back");
+      refresh();
+      bool deciding = true;
+      int rev_target = 0;
+      while(deciding){
+        c = getch();
+        switch(c){
+          case '1':
+            if(world.pc.pokemon[0]){
+              if(world.pc.pokemon[0]->cur_hp > 0){
+                mvprintw(19,0,"Cannot use revive on non-knocked pokemon");
+              }else{
+                deciding = false;
+                rev_target = 0;
+              }
+            } else{
+              mvprintw(20,0,"Please select a valid pokemon");
+            }
+            break;
+          case '2':
+            if(world.pc.pokemon[1]){
+              if(world.pc.pokemon[1]->cur_hp > 0){
+                mvprintw(19,0,"Cannot use revive on non-knocked pokemon");
+              }else{
+                deciding = false;
+                rev_target = 1;
+              }
+            } else{
+              mvprintw(20,0,"Please select a valid pokemon");
+            }
+            break;
+          case '3':
+            if(world.pc.pokemon[2]){
+              if(world.pc.pokemon[2]->cur_hp > 0){
+                mvprintw(19,0,"Cannot use revive on non-knocked pokemon");
+              }else{
+                deciding = false;
+                rev_target = 2;
+              }
+            } else{
+              mvprintw(20,0,"Please select a valid pokemon");
+            }
+            break;
+          case '4':
+            if(world.pc.pokemon[3]){
+              if(world.pc.pokemon[3]->cur_hp > 0){
+                mvprintw(19,0,"Cannot use revive on non-knocked pokemon");
+              }else{
+                deciding = false;
+                rev_target = 3;
+              }
+            } else{
+              mvprintw(20,0,"Please select a valid pokemon");
+            }
+            break;
+          case '5':
+            if(world.pc.pokemon[4]){
+              if(world.pc.pokemon[4]->cur_hp > 0){
+                mvprintw(19,0,"Cannot use revive on non-knocked pokemon");
+              }else{
+                deciding = false;
+                rev_target = 4;
+              }
+            } else{
+              mvprintw(20,0,"Please select a valid pokemon");
+            }
+            break;
+          case '6':
+            if(world.pc.pokemon[5]){
+              if(world.pc.pokemon[5]->cur_hp > 0){
+                mvprintw(19,0,"Cannot use revive on non-knocked pokemon");
+              }else{
+                deciding = false;
+                rev_target = 5;
+              }
+            } else{
+              mvprintw(20,0,"Please select a valid pokemon");
+            }
+            break;
+          case 27:
+            deciding = false;
+            rev_target = -1;
+        }
+      }
+      if(rev_target != -1){
+        int rev_hp = world.pc.pokemon[rev_target]->get_hp() / 2;
+        world.pc.pokemon[rev_target]->cur_hp += rev_hp;
+        world.pc.bag[revive]--;
+        return 1;
+      }
+      clear();
+
+    }else if(c == '2' && world.pc.bag[potion] > 0){
+      clear();
+      io_list_pokemon();
+      mvprintw(1,0,"Please select which pokemon you would like to use the potion on");
+      mvprintw(21,0, "ESC to go back");
+      refresh();
+      bool deciding = true;
+      int pot_target = 0;
+      while(deciding){
+        c = getch();
+        switch(c){
+          case '1':
+            if(world.pc.pokemon[0]){
+              if(world.pc.pokemon[0]->cur_hp == world.pc.pokemon[0]->get_hp()){
+                mvprintw(19,0,"Cannot use Potion on fully healed pokemon");
+              }else{
+                deciding = false;
+                pot_target = 0;
+              }
+            } else{
+              mvprintw(20,0,"Please select a valid pokemon");
+            }
+            break;
+          case '2':
+            if(world.pc.pokemon[1]){
+              if(world.pc.pokemon[1]->cur_hp == world.pc.pokemon[1]->get_hp()){
+                mvprintw(19,0,"Cannot use Potion on fully healed pokemon");
+              }else{
+                deciding = false;
+                pot_target = 1;
+              }
+            } else{
+              mvprintw(20,0,"Please select a valid pokemon");
+            }
+            break;
+          case '3':
+            if(world.pc.pokemon[2]){
+              if(world.pc.pokemon[2]->cur_hp == world.pc.pokemon[2]->get_hp()){
+                mvprintw(19,0,"Cannot use Potion on fully healed pokemon");
+              }else{
+                deciding = false;
+                pot_target = 2;
+              }
+            } else{
+              mvprintw(20,0,"Please select a valid pokemon");
+            }
+            break;
+          case '4':
+            if(world.pc.pokemon[3]){
+              if(world.pc.pokemon[3]->cur_hp == world.pc.pokemon[3]->get_hp()){
+                mvprintw(19,0,"Cannot use Potion on fully healed pokemon");
+              }else{
+                deciding = false;
+                pot_target = 3;
+              }
+            } else{
+              mvprintw(20,0,"Please select a valid pokemon");
+            }
+            break;
+          case '5':
+            if(world.pc.pokemon[4]){
+              if(world.pc.pokemon[4]->cur_hp == world.pc.pokemon[4]->get_hp()){
+                mvprintw(19,0,"Cannot use Potion on fully healed pokemon");
+              }else{
+                deciding = false;
+                pot_target = 4;
+              }
+            } else{
+              mvprintw(20,0,"Please select a valid pokemon");
+            }
+            break;
+          case '6':
+            if(world.pc.pokemon[5]){
+              if(world.pc.pokemon[5]->cur_hp == world.pc.pokemon[5]->get_hp()){
+                mvprintw(19,0,"Cannot use Potion on fully healed pokemon");
+              }else{
+                deciding = false;
+                pot_target = 5;
+              }
+            } else{
+              mvprintw(20,0,"Please select a valid pokemon");
+            }
+            break;
+          case 27:
+            deciding = false;
+            pot_target = -1;
+        }
+      }
+      if(pot_target != -1){
+        if(world.pc.pokemon[pot_target]->cur_hp + 20 > world.pc.pokemon[pot_target]->get_hp()){
+          world.pc.pokemon[pot_target]->cur_hp = world.pc.pokemon[pot_target]->get_hp();
+        }else{
+          world.pc.pokemon[pot_target]->cur_hp += 20;
+        }
+        world.pc.bag[potion]--;
+        return 1;
+      }
+      clear();
+
+    }else if(c == '3' && world.pc.bag[pokeball] > 0){
+      if(in_wild_battle){
+        if(world.pc.bag[pokeball] > 0){
+          world.pc.bag[pokeball]--;
+          return 2; //Attempt capture
+        }else{
+          clear();
+          mvprintw(20,0, "No pokeballs availible :(");
+        }
+      } else{
+        clear();
+        mvprintw(20,0, "Use of pokeballs only availible in battle with wild pokemon!");
+      }
+
+    }else if(c == 27){
+      in_bag = false; //redundant
+      return 0;
+    }else{
+      clear();
+      mvprintw(20,0,"Invalid command");
+    }
+  }
+
+  return 0; //just looking
+}
+
+
+
 void io_encounter_pokemon()
 {
+  bool fighting = true;
+  int attempts = 0;
+  int cur_pokemon = -1;
+
+  int i;
+  for(i = 0; i<6; i++){
+    if(is_alive(i)){
+      cur_pokemon = i;
+      break;
+    }
+  }
+  if(cur_pokemon == -1){
+    return; //NO AVAILABLE POKEMON TO USE, EXIT AND CONTINUE AS NORMAL
+  }
+  
   Pokemon *p;
   
   int md = (abs(world.cur_idx[dim_x] - (WORLD_SIZE / 2)) +
@@ -530,7 +1370,7 @@ void io_encounter_pokemon()
   p = new Pokemon(rand() % (maxl - minl + 1) + minl);
 
   //  std::cerr << *p << std::endl << std::endl;
-
+  /*
   io_queue_message("%s%s%s: HP:%d ATK:%d DEF:%d SPATK:%d SPDEF:%d SPEED:%d %s",
                    p->is_shiny() ? "*" : "", p->get_species(),
                    p->is_shiny() ? "*" : "", p->get_hp(), p->get_atk(),
@@ -538,9 +1378,291 @@ void io_encounter_pokemon()
                    p->get_speed(), p->get_gender_string());
   io_queue_message("%s's moves: %s %s", p->get_species(),
                    p->get_move(0), p->get_move(1));
+  */
+
+
+  clear();
+  while(fighting){
+    mvprintw(0, 0, "A wild %s appeared!", p->get_species());
+    mvprintw(15,0, "Current Pokemon: %s", world.pc.pokemon[cur_pokemon]->get_species());
+    mvprintw(16,0, "Level: %d    HP: %d/%d", world.pc.pokemon[cur_pokemon]->get_level(), world.pc.pokemon[cur_pokemon]->cur_hp, world.pc.pokemon[cur_pokemon]->get_hp());
+    mvprintw(15,40, "Opponent Pokemon: %s", p->get_species());
+    mvprintw(16,40, "Level: %d    HP: %d/%d", p->get_level(), p->cur_hp, p->get_hp());
+    mvprintw(3, 0, "1) Fight");
+    mvprintw(4, 0, "2) Bag");
+    mvprintw(5, 0, "3) Run");
+    mvprintw(6, 0, "4) Switch Pokemon");
+    refresh(); 
+    
+    char c = getch();
+
+    if(c == '1'){ //fight
+      clear();
+      int fight_result = -1;
+      fight_result = io_fight(world.pc.pokemon[cur_pokemon], p, true);
+      if(fight_result >=0 && fight_result < 6){
+        cur_pokemon = fight_result;
+      } else if(fight_result > 6){
+        fighting = false;
+        return;
+      }
+      clear();
+    }else if(c == '2'){ //bag
+      clear();
+      int decision;
+      decision = io_enter_bag(true);
+      if(decision == 2){
+        attempt_capture(p);
+        fighting = false;
+      } else if(decision == 1){
+        //TODO OPPONENT MOVE
+      } else if(decision == 0){
+        //DONT DO OPPONENT MOVE
+      }
+      clear();
+      refresh();
+
+    }else if(c == '3'){ //run
+      if(attempt_run(world.pc.pokemon[cur_pokemon]->get_speed(), p->get_speed(), attempts) == true){
+        fighting = false;
+      } else{
+        attempts++;
+        clear();
+        mvprintw(19, 0, "Escape Failed!");
+        mvprintw(21,0, "Press any Key to continue...");
+        refresh();
+        getch();
+        do_move(0, world.pc.pokemon[cur_pokemon], p);
+        clear();
+      }
+    }else if(c == '4'){ //switch pokemon
+      clear();
+      int ret = -1;
+      ret = io_switch_pokemon(cur_pokemon);
+      if(ret == -1){
+        //Dont do a move
+      } else{ //switch the current pokemon out and do opponent move
+        cur_pokemon = ret;
+        mvprintw(19, 0, "Pokemon Swtiched!");
+        mvprintw(21,0, "Press any Key to continue...");
+        refresh();
+        getch();
+        do_move(0, world.pc.pokemon[cur_pokemon], p);
+        clear();
+      }
+      clear();
+      refresh();
+
+    } else if(c == 'Q'){
+        clear();
+        io_display();
+        refresh();
+        return;
+      } else{
+      clear();
+      mvprintw(20, 0, "Invalid Command");
+      refresh();
+    }
+  }
 
   // Later on, don't delete if captured
-  delete p;
+  //delete p;
+}
+
+void gen_trainer_pokemon(Npc *npc){
+  int num_pokes = 0;
+  int r;
+  do{
+    num_pokes++;
+    r = rand() % 100;
+  }while(r < 60 && num_pokes < 6);
+
+  int i;
+  for(i = 0; i < num_pokes; i++){
+    Pokemon *p;
+    int md = (abs(world.cur_idx[dim_x] - (WORLD_SIZE / 2)) +
+              abs(world.cur_idx[dim_x] - (WORLD_SIZE / 2)));
+    int minl, maxl;
+    
+    if (md <= 200) {
+      minl = 1;
+      maxl = md / 2;
+    } else {
+      minl = (md - 200) / 2;
+      maxl = 100;
+    }
+    if (minl < 1) {
+      minl = 1;
+    }
+    if (minl > 100) {
+      minl = 100;
+    }
+    if (maxl < 1) {
+      maxl = 1;
+    }
+    if (maxl > 100) {
+      maxl = 100;
+    }
+
+    p = new Pokemon(rand() % (maxl - minl + 1) + minl);
+    npc->pokemon[i] = p;
+  }
+  
+}
+bool is_enemy_poke_alive(Pokemon *p){
+  if(p->cur_hp > 0){
+    return true;
+  } else{
+    return false;
+  }
+}
+
+void display_opponent_pokes(Npc *enemy){
+  mvprintw(0,50,"Opponents Pokemon:");
+
+  int i;
+  for(i = 0; i<6; i++){
+    if(enemy->pokemon[i]){
+      if(is_enemy_poke_alive(enemy->pokemon[i])){
+        mvprintw(i+3,50,"%s: HP %d/%d", enemy->pokemon[i]->get_species(), enemy->pokemon[i]->cur_hp, enemy->pokemon[i]->get_hp());
+      }else{
+        mvprintw(i+3,50,"%s: Knocked Out!", enemy->pokemon[i]->get_species());
+      }
+    }else{
+      break;
+    }
+  }
+}
+
+int get_next_enemy_poke(Character *enemy){
+  int i;
+  int alive = -1;
+  for(i = 0; i<6; i++){
+    if(enemy->pokemon[i]){
+      if(is_enemy_poke_alive(enemy->pokemon[i])){
+        alive = i;
+        break;
+      } 
+    } else{
+      break;
+    }
+  }
+  return alive;
+}
+
+void io_battle(Character *enemy)
+{
+  bool fighting = true;
+  int cur_pokemon = -1;
+  
+
+  int i;
+  for(i = 0; i<6; i++){
+    if(is_alive(i)){
+      cur_pokemon = i;
+      break;
+    }
+  }
+  if(cur_pokemon == -1){
+    return; //NO AVAILABLE POKEMON TO USE, EXIT AND CONTINUE AS NORMAL
+  }
+
+  Npc *npc;
+
+  // io_display();
+  // mvprintw(0, 0, "Aww, how'd you get so strong?  You and your pokemon must share a special bond!");
+  // refresh();
+  // getch();
+  
+  npc = dynamic_cast<Npc *>(enemy);
+
+  if(!npc->pokemon[0]){
+    gen_trainer_pokemon(npc);
+  }
+  int enemy_poke = -1;
+  enemy_poke = get_next_enemy_poke(enemy);
+
+  clear();
+  while(fighting){
+    mvprintw(0, 0, "You have been challenged by a Trainer to a dual!");
+    mvprintw(15,0, "Current Pokemon: %s", world.pc.pokemon[cur_pokemon]->get_species());
+    mvprintw(16,0, "Level: %d    HP: %d/%d", world.pc.pokemon[cur_pokemon]->get_level(), world.pc.pokemon[cur_pokemon]->cur_hp, world.pc.pokemon[cur_pokemon]->get_hp());
+    mvprintw(3, 0, "1) Fight");
+    mvprintw(4, 0, "2) Bag");
+    mvprintw(5, 0, "3) Switch Pokemon");
+    display_opponent_pokes(npc);
+    refresh(); 
+    
+    char c = getch();
+
+    if(c == '1'){ //fight
+      int fight_result = -1;
+      fight_result = io_fight(world.pc.pokemon[cur_pokemon], enemy->pokemon[enemy_poke], false);
+      if(fight_result >=0 && fight_result < 6){
+        cur_pokemon = fight_result;
+      } if(fight_result == 100){
+        enemy_poke = get_next_enemy_poke(enemy);
+        if(enemy_poke == -1){
+          npc->defeated = 1;
+          if (npc->ctype == char_hiker || npc->ctype == char_rival) {
+            npc->mtype = move_wander;
+          }
+          return;
+        }
+      }else if(fight_result > 6){
+        fighting = false;
+        return;
+      }
+      clear();
+    }else if(c == '2'){ //bag
+      clear();
+      int decision;
+      decision = io_enter_bag(false);
+      if(decision == 1){
+        //TODO OPPONENT MOVE
+      } else if(decision == 0){
+        //DONT DO OPPONENT MOVE
+      }
+      clear();
+      refresh();
+
+    }else if(c == '3'){ //switch pokemon
+      clear();
+      int ret = -1;
+      ret = io_switch_pokemon(cur_pokemon);
+      if(ret == -1){
+        //Dont do a move
+      } else{ //switch the current pokemon out and do opponent move
+        cur_pokemon = ret;
+        mvprintw(19, 0, "Pokemon Swtiched!");
+        mvprintw(21,0, "Press any Key to continue...");
+        refresh();
+        getch();
+        do_move(0, world.pc.pokemon[cur_pokemon], enemy->pokemon[enemy_poke]);
+        clear();
+      }
+      clear();
+      refresh();
+
+    } else if(c == 'Q'){
+        npc->defeated = 1; //For debugging stuff
+        if (npc->ctype == char_hiker || npc->ctype == char_rival) {
+          npc->mtype = move_wander;
+        }
+        clear();
+        io_display();
+        refresh();
+        return;
+      }else{
+      clear();
+      mvprintw(20, 0, "Invalid Command");
+      refresh();
+    }
+  }
+  
+  
+
+
 }
 
 void io_handle_input(pair_t dest)
@@ -600,6 +1722,12 @@ void io_handle_input(pair_t dest)
       break;
     case '>':
       turn_not_consumed = move_pc_dir('>', dest);
+      break;
+    case 'B':
+      io_enter_bag(false);
+      clear();
+      io_display();
+      refresh();
       break;
     case 'Q':
       dest[dim_y] = world.pc.pos[dim_y];

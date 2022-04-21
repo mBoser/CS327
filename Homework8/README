@@ -1,0 +1,23 @@
+Use: 
+    make
+    ./poke327
+
+
+For this assignment, I started with professors code from 1.07 and built off that.
+To start this assignment, I decided to go the route of each "instance" would get
+its own function that would stay there, until either a decision was met, or the
+user backed out with the escape key. There is far too much to go over in just
+this readme so I will just say that each level of a battle, goes one deeper, and
+from there, you can either go back with no penalty, or you can continue to go
+deeper until the bottom of the stack is reached. Most of my work was done in io.cpp
+witch is where all the io functions and helper functions reside. They all stem from
+either io_battle() or io_encounter_pokemon(). To get into all the source code, start
+there and then go from each call respectively. 
+
+Known Bugs:
+    Not really any bugs that are known, It should
+    be explained by the UI if there is any ambiguity.
+    If there are any bugs, they aren't really known I suppose.
+    The only thing that may not be intended is if the
+    user uses a potion or revive, it does not use a turn,
+    whereas if they switch or fail an escape it uses a turn
