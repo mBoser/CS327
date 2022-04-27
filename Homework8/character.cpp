@@ -49,7 +49,7 @@ static void move_hiker_func(Character *c, pair_t dest)
     }
     if (world.hiker_dist[c->pos[dim_y] + all_dirs[i & 0x7][dim_y]]
                         [c->pos[dim_x] + all_dirs[i & 0x7][dim_x]] == 0) {
-      io_battle(c, &world.pc);
+      io_battle(c);
       break;
     }
   }
@@ -79,7 +79,7 @@ static void move_rival_func(Character *c, pair_t dest)
     }
     if (world.rival_dist[c->pos[dim_y] + all_dirs[i & 0x7][dim_y]]
                         [c->pos[dim_x] + all_dirs[i & 0x7][dim_x]] == 0) {
-      io_battle(c, &world.pc);
+      io_battle(c);
       break;
     }
   }
@@ -96,7 +96,7 @@ static void move_pacer_func(Character *c, pair_t dest)
       world.cur_map->cmap[c->pos[dim_y] + n->dir[dim_y]]
                          [c->pos[dim_x] + n->dir[dim_x]] ==
       &world.pc) {
-      io_battle(c, &world.pc);
+      io_battle(c);
       return;
   }
 
@@ -130,7 +130,7 @@ static void move_wanderer_func(Character *c, pair_t dest)
       world.cur_map->cmap[c->pos[dim_y] + n->dir[dim_y]]
                          [c->pos[dim_x] + n->dir[dim_x]] ==
       &world.pc) {
-      io_battle(c, &world.pc);
+      io_battle(c);
       return;
   }
 
@@ -170,7 +170,7 @@ static void move_walker_func(Character *c, pair_t dest)
       world.cur_map->cmap[c->pos[dim_y] + n->dir[dim_y]]
                          [c->pos[dim_x] + n->dir[dim_x]] ==
       &world.pc) {
-      io_battle(c, &world.pc);
+      io_battle(c);
       return;
   }
 

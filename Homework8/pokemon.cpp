@@ -91,6 +91,7 @@ Pokemon::Pokemon(int level) : level(level)
 
   shiny = ((rand() & 0x1fff) ? false : true);
   gender = ((rand() & 0x1fff) ? gender_female : gender_male);
+  cur_hp = effective_stat[stat_hp];
 }
 
 const char *Pokemon::get_species() const
@@ -126,6 +127,24 @@ int Pokemon::get_spdef() const
 int Pokemon::get_speed() const
 {
   return effective_stat[stat_speed];
+}
+
+int Pokemon::get_move_id(int i)
+{
+  if(i < 4){
+    return move_index[i];
+  }
+  return -1;
+}
+
+int Pokemon::get_level()
+{
+  return level;
+}
+
+int Pokemon::get_species_id()
+{
+  return pokemon_species_index;
 }
 
 const char *Pokemon::get_gender_string() const

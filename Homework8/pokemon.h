@@ -39,7 +39,11 @@ class Pokemon {
   const char *get_gender_string() const;
   bool is_shiny() const;
   const char *get_move(int i) const;
+  int get_move_id(int i);
+  int get_level();
+  int get_species_id();
   std::ostream &print(std::ostream &o) const;
+  int cur_hp;
 };
 
 std::ostream &operator<<(std::ostream &o, const Pokemon &p);
