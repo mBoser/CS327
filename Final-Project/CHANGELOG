@@ -1,0 +1,29 @@
+4/30/22
+    Added basic UI elements
+        Gameboard
+        Cursor
+        Difficulty select
+        User priority select
+    
+    Created a very simple AI (Timmy)
+    Found Connect 4 API
+    Got HTTP library
+    Got JSON library
+    Did some simple API testing
+
+5/2/22
+    Added giga chad to the game 
+    Added steve logic
+
+5/3/22
+    Added win condition checking!
+    Debug Debug Debug!
+        Fixed problem with columns being full
+        Fixed problem with AI placing in non existant columns
+        Fixed problem with winning immediately
+        Fixed problem with AI lockup (not finding a move)
+
+5/4/22
+    Added feature to have AI play eachother!
+    Did README
+    DONE!

@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <sys/time.h>
 #include <string>
+#include <unistd.h>
 
 #include <ncurses.h>
 #include "HTTPRequest.hpp"
@@ -66,9 +67,9 @@ int get_difficulty(){
     mvprintw(0,0, "Welcome to Connect 4!");
     mvprintw(1,0, "Please choose your difficulty");
 
-    mvprintw(3,0, "1) Very Easy");
-    mvprintw(4,0, "2) Slightly more difficult");
-    mvprintw(5,0, "3) Hardest");
+    mvprintw(3,0, "1) Very Easy (Timmy)");
+    mvprintw(4,0, "2) Slightly more difficult (Steve)");
+    mvprintw(5,0, "3) Hardest (Giga Chad)");
     refresh();
     char c;
     bool deciding = true;
@@ -170,6 +171,20 @@ void display_board(){
     int board_x = 0;
 
     clear();
+
+    if(difficulty == 1){
+        mvprintw(0, 0, "Welcome to Timmy's playground!");
+        mvprintw(1, 0, "Take it easy on him");
+    } else if(difficulty == 2){
+        mvprintw(0, 0, "Welcome to Steve's office!");
+        mvprintw(1, 0, "Should be a good match!");
+    } else{
+        mvprintw(0, 0, "How dare you challenge Giga Chad!");
+        mvprintw(1, 0, "Prepare to get MOPPED bozo!");
+    }
+    mvprintw(5,0, "Use Side arrows to move left and right");
+    mvprintw(6,0, "Use Space to place your token!");
+    mvprintw(21,0, "Use 'Q' to quit any time...");
     for(y = 0; y<Y_MAX; y++){
         for(x = 0; x<X_MAX; x++){
             if(x%2 == 1){
@@ -238,10 +253,66 @@ int num_free(int x){
     return count;
 }
 
+
+bool check_win(int player, int x, int y){
+    std:: string url = "http://kevinalbs.com/connect4/back-end/index.php/hasWon?board_data=";
+    url += get_board_info();
+    url += "&player=";
+    url += std::to_string(player);
+    url += "&i=";
+    url += std::to_string(y);
+    url += "&j=";
+    url += std::to_string(x);
+
+    try
+    {
+        http::Request request{url};
+        const auto response = request.send("GET");
+        std::string str = {response.body.begin(), response.body.end()};
+        if(str.compare("true") == 0){
+            display_board();
+            mvprintw(2, BOARD_X_OFFSET+1, "Game is over!");
+            if(player == 1){
+                if(difficulty == 1){
+                    mvprintw(3, BOARD_X_OFFSET-10, "You should not feel good about this one...");
+                } else if(difficulty == 2){
+                    mvprintw(3, BOARD_X_OFFSET-13, "Good win, Steve is still working on his skills!");
+                } else{
+                    mvprintw(3, BOARD_X_OFFSET-3, "IMPRESSIVE! nobody has beaten him yet!");
+                }
+            } else{
+                if(difficulty == 1){
+                    mvprintw(3, BOARD_X_OFFSET-6, "How did you lose to Timmy...");
+                } else if(difficulty == 2){
+                    mvprintw(3, BOARD_X_OFFSET-3, "Steve has bested you!");
+                } else{
+                    mvprintw(3, BOARD_X_OFFSET-10, "I tried to warn you of Chad's power...");
+                }
+            }
+            
+            refresh();
+            getch();
+            end_game = true;
+            return true;
+        }else{
+            return false;
+        }
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Request failed, error: " << e.what() << '\n';
+    }
+
+    return false;
+}
+
 bool place_chip(int player, int column){
     int free_space = num_free(column);
     if(free_space > 0){
         board[free_space-1][column] = player;
+        if(check_win(player, column, free_space-1)){
+            end_game = true;
+        }
         return true;
     } else{
         return false;
@@ -270,13 +341,19 @@ void do_user_move(){
     }
 }
 
-void do_opponent_move(){
+
+void do_opponent_move(int player){
     std::string url = "http://kevinalbs.com/connect4/back-end/index.php/getMoves?board_data=";
     url += get_board_info();
-    url += "&player=2";
-
-    int moves[7] = {0};
+    url += "&player=";
+    url += std::to_string(player);
     int i;
+    int moves[7];
+    for(i = 0; i < 7; i++){
+        moves[i] = -9999;
+    }
+   
+    int num_moves = 0;
 
     try
     {
@@ -286,12 +363,12 @@ void do_opponent_move(){
         auto j = json::parse(str);
         i = 0;
         for (json::iterator it = j.begin(); it != j.end(); ++it) {
-            moves[i] = *it;
-            i++;
-            std::cout << *it << '\n';
+            moves[stoi(it.key())] = it.value();
+            num_moves++;
+            //std::cout << it.value() << "\n";
         }
-        getch();
-        //std::cout << j.dump(3) << std::endl; // print the result
+        
+        //getch();
     }
     catch (const std::exception& e)
     {
@@ -304,29 +381,97 @@ void do_opponent_move(){
         bool moved = false;
         while(!moved){
             move = (rand() % 7);
-            if(place_chip(2, move)){
+            if(place_chip(player, move)){
                 moved = true;
             }
         }
 
     } else if(difficulty == 2){
-        int best_moves[3] = {0};
-        for(i = 0; i<7; i++){
-            best_moves[1] = moves[i]; //bullshit logic to ignore warnings
-        }
-        
-        bool moved = false;
-        while(!moved){
-            int move = rand() % 3;
-            if(place_chip(2, best_moves[move])){
-                moved = true;
+        //This is Steve, Steve is your average joe, he knows the concept, but will probably not pick the correct move every time...
+
+        int best_move = -9999;
+        int best_move_index = -1;
+        int second_best_move_index = -1;
+        int second_best_move = - -1000;
+        int third_best_move_index = -1;
+        int third_best_move = -1000;
+
+
+        for(i = 0; i < 7; i++){
+            if(moves[i] >= best_move){
+                third_best_move_index = second_best_move_index;
+                second_best_move_index = best_move_index;
+                best_move = moves[i];
+                best_move_index = i;
+            } else if(moves[i] >= second_best_move){
+                third_best_move = second_best_move;
+                third_best_move_index = second_best_move_index;
+                second_best_move = moves[i];
+                second_best_move_index = i;
+            } else if(moves[i] > third_best_move){
+                third_best_move = moves[i];
+                third_best_move_index = i;
             }
         }
-        //This is Steve, steve is your average joe, he knows the concept, but will probably not pick the correct move every time...
+        bool moved = false;
+        while(!moved){
+            if(num_moves == 1){
+                if(place_chip(player, best_move_index)){
+                    moved = true;
+                }
+            } else if(num_moves == 2){
+                if(rand() % 100 < 40){
+                    if(place_chip(player, best_move_index)){
+                        moved = true;
+                    }
+                } else{
+                    if(second_best_move_index >= 0){
+                        if (place_chip(player, second_best_move_index)){
+                            moved = true;
+                        }
+                    } else{
+                        if(place_chip(player, best_move_index)){
+                            moved = true;
+                        }
+                    }
+                }
+            } else{
+                if(rand() % 100 < 25){
+                    if (place_chip(player, best_move_index)){
+                        moved = true;
+                    }
+                } else if(rand() % 75 < 40){
+                    if(second_best_move_index >= 0){
+                        if (place_chip(player, second_best_move_index)){
+                            moved = true;
+                        }
+                    } else{
+                        if (place_chip(player, best_move_index)){
+                            moved = true;
+                        }
+                    }
+                } else{
+                    if(third_best_move_index >= 0){
+                        if (place_chip(player, third_best_move_index)){
+                            moved = true;
+                        }
+                    } else if(second_best_move_index >= 0){
+                        if (place_chip(player, second_best_move_index)){
+                            moved = true;
+                        }
+                    } else{
+                        if (place_chip(player, best_move_index)){
+                            moved = true;
+                        }
+                    }
+                }
+
+            }
+        }
 
     } else if(difficulty == 3){
-        //This is Alpha Chad, Alpha chad will correctly pick the mathematically optimal move 99% of the time...
-        int best_move = 0;
+        //This is Giga Chad, Giga Chad will correctly pick the mathematically optimal move 99% of the time...
+        int best_move = -9999;
         int best_move_index = 0;
         for(i = 0; i<7; i++){
             if(moves[i] > best_move){
@@ -334,8 +479,10 @@ void do_opponent_move(){
                 best_move_index = i;
             }
         }
-
-        place_chip(2, best_move_index);
+        // mvprintw(2, 70, "1: %d", best_move_index);
+        // refresh();
+        // getch();
+        place_chip(player, best_move_index);
     }  else{
         //This is not good, just get rid of the game
         end_game = true;
@@ -343,16 +490,41 @@ void do_opponent_move(){
 
 }
 
-void game_loop(bool user_priority){
-    //int c;
+void game_loop(bool user_priority, bool ai_battle){
     while(!end_game){
         display_board();
-        if(user_priority){
+        if(ai_battle){
+            if(user_priority){
+                sleep(.5);
+                do_opponent_move(1);
+                if(end_game){
+                    break;
+                }
+                display_board();
+                sleep(.5);
+                do_opponent_move(2);
+            } else{
+                sleep(1);
+                do_opponent_move(2);
+                if(end_game){
+                    break;
+                }
+                display_board();
+                sleep(1);
+                do_opponent_move(1);
+            }
+        } else if(user_priority){
             do_user_move();
+            if(end_game){
+                break;
+            }
             display_board();
-            do_opponent_move();
+            do_opponent_move(2);
         } else{
-            do_opponent_move();
+            do_opponent_move(2);
+            if(end_game){
+                break;
+            }
             display_board();
             do_user_move();
         }
@@ -376,12 +548,9 @@ int main(){
     difficulty = get_difficulty();
     if(!end_game){
         user_priority = get_priority();
-        game_loop(user_priority);
+        game_loop(user_priority, false);
     }
     io_reset_terminal();
-    
-
-
-    
+        
     return 0;
 }

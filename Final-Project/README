@@ -1,0 +1,73 @@
+Welcome to my final project for CS327!
+
+I decided to make Connect 4 for my final project and I think it turned out pretty good!
+I did not have the time to make my own complex AI so I turned to the web. I stumbled
+across this awesome API that allowed me to make calls to it and it would return a list
+of all the posible moves, and would rank them by how "statistically" optimal they are.
+As connect 4 is a "solved" game, these calls didn't take too long to recieve back. 
+
+The API that I used was from a man named Kevin. The API documentation is very simple
+and you can read about it here:
+http://kevinalbs.com/connect4/back-end/info.html
+
+To start the game run:
+    make
+    ./connect_four
+
+The game is realtively simple from a user standpoint. On bootup you are prompted with
+the difficulty selector which you can enter 1,2, or 3 to choose your opponent.
+Opponent's behavior is as such:
+1) Timmy:
+    Timmy is horrible at the game and I don't think he knows how to play, but he likes
+    to put the pieces in the columns, this is essentially a free win, it's actually
+    harder to lose than it is to win against him.
+    (Timmy randomly picks a column and places it there if space)
+
+2) Steve:
+    Steve is "kinda" good at the game, but will probably not pick the best move every
+    time and sometimes misses obvious moves. 
+    (Steve has a 25% chance to pick the best move, 53% chance to pick the second best
+    move, and a 22% chance to pick the third best move.)
+
+3) Giga Chad:
+    Giga Chad will always pick the optimal move based on the API's algorithm. So far,
+    nobody has actually beat him, only tied. I will be very impressed if you do manage
+    to beat him!
+
+After you pick your difficulty, you are prompted with a heads or tails to see who goes
+first.
+
+Now you are in the game, arrows to move side to side and space bar to select your place!
+you can quit any time with an input of 'Q'.
+
+
+Special Feature!
+    I was intreseted to see what happens if you have giga chad battle himself, so I made
+    it possible. There is no streamline solution to do this in game but all you have to
+    do is go to line 551 and change
+        "game_loop(user_priority, false);"
+        to
+        "game_loop(user_priority, true);"
+
+    after you do this, just re-make it and run the game again. This will look the same
+    from a UI standpoint at the start, but all you have to do is slect the difficulty
+    that you want to battle eachother. So if you want giga chad to battle himself, you
+    just select 3 for the difficulty and then choose heads or tails for the blue giga
+    chad to start first or second.
+
+Other info:
+    To do the API requests, I used a single-header request library that makes it very
+    simple do do these requests without actually downloading any 3rd party libraries.
+    
+    After I get the request, to get the data out I use a single-header JSON parser
+    which makes it a lot easier to parse through the response from the server!
+
+Bugs:
+    From my knowledge, the only time where you will run into a bug is when playing
+    against giga-chad, I have seen it where he cannot find a move and then will end
+    up just not placing a move, and then you will win freely. I have tried to replicate
+    it and I can't seem to figure out what situation it happens, but I think when
+    you get to very late end-game, and many columns are filled, it could have a
+    problem.
+
+Thank you for reading and I hope you enjoy fighting Giga Chad!
